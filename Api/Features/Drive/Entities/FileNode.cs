@@ -1,6 +1,7 @@
-using Hushify.Api.Persistence.Filters;
+using Hushify.Api.Features.Identity.Entities;
+using Hushify.Api.Filters;
 
-namespace Hushify.Api.Persistence.Entities.Drive;
+namespace Hushify.Api.Features.Drive.Entities;
 
 public sealed class FileNode : IWorkspaceFilter
 {
@@ -26,7 +27,7 @@ public sealed class FileNode : IWorkspaceFilter
     public string BucketName { get; set; } = default!;
     public string Key { get; set; } = default!;
     public long EncryptedSize { get; set; }
-    public UploadStatus UploadStatus { get; set; } = UploadStatus.UploadStarted;
+    public FileStatus FileStatus { get; set; } = FileStatus.UploadStarted;
     public Workspace Workspace { get; set; } = default!;
 
     public Guid? ParentFolderId { get; set; }

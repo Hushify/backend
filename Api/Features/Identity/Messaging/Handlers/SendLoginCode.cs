@@ -1,5 +1,5 @@
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
-using Hushify.Api.Persistence.Entities;
 using Hushify.Api.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;

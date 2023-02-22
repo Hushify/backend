@@ -1,5 +1,5 @@
-using Hushify.Api.Persistence.Entities;
-using Hushify.Api.Persistence.Entities.Drive;
+using Hushify.Api.Features.Drive.Entities;
+using Hushify.Api.Features.Identity.Entities;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

@@ -1,7 +1,7 @@
 using Hushify.Api.Constants;
 using Hushify.Api.Exceptions;
 
-namespace Hushify.Api.Persistence.Providers;
+namespace Hushify.Api.Providers;
 
 public interface IWorkspaceProvider
 {

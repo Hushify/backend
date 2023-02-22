@@ -1,6 +1,7 @@
 using FluentValidation;
+using Hushify.Api.Features.Identity.Entities;
+using Hushify.Api.Filters;
 using Hushify.Api.Options;
-using Hushify.Api.Persistence.Entities;
 using Hushify.Api.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -11,22 +12,18 @@ namespace Hushify.Api.Features.Identity.Endpoints;
 
 public static class ForgotPassword
 {
-    public static IEndpointRouteBuilder MapForgotPasswordEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapResetPasswordEndpoints(this RouteGroupBuilder routes)
     {
-        routes.MapPost("/forgot-password", ForgotPasswordHandler);
+        routes.WithParameterValidation(typeof(ResetPasswordRequest));
+
+        routes.MapPost("/reset-password", ResetPasswordHandler);
         return routes;
     }
 
-    private static async Task<Results<Ok, ValidationProblem>> ForgotPasswordHandler(
-        ForgotPasswordRequest req, IValidator<ForgotPasswordRequest> validator, IOptions<ConfigOptions> options,
+    private static async Task<Results<Ok, ValidationProblem>> ResetPasswordHandler(
+        ResetPasswordRequest req, IOptions<ConfigOptions> options,
         IEmailService emailService, UserManager<AppUser> userManager, IBus bus, CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var user = await userManager.FindByEmailAsync(req.Email);
         if (user is null)
         {
@@ -47,11 +44,11 @@ public static class ForgotPassword
     }
 }
 
-public sealed record ForgotPasswordRequest(string Email);
+public sealed record ResetPasswordRequest(string Email);
 
-public sealed class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
+public sealed class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
 {
-    public ForgotPasswordRequestValidator()
+    public ResetPasswordRequestValidator()
     {
         RuleFor(x => x.Email).NotEmpty().WithMessage((request, _) => $"{request.Email} can not be empty.")
             .EmailAddress().WithMessage((request, _) => $"{request.Email} is not a valid email address.");

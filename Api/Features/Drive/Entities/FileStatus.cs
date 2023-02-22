@@ -1,6 +1,6 @@
-namespace Hushify.Api.Persistence.Entities.Drive;
+namespace Hushify.Api.Features.Drive.Entities;
 
-public enum UploadStatus
+public enum FileStatus
 {
     UploadStarted,
     UploadFailed,

@@ -2,9 +2,9 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Hushify.Api.Exceptions;
 using Hushify.Api.Features.Drive.Endpoints;
+using Hushify.Api.Features.Drive.Entities;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
-using Hushify.Api.Persistence.Entities.Drive;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -42,7 +42,7 @@ public sealed class DriveS3Service : IDriveService
                 cancellationToken) ?? throw new AppException("Folder does not exists.");
 
         var files = currentFolder.Files
-            .Where(f => f.UploadStatus == UploadStatus.UploadFinished)
+            .Where(f => f.FileStatus == FileStatus.UploadFinished)
             .Select(f => new FileNodeVM(f.Id, f.MetadataBundle, f.EncryptedSize, f.FileKeyBundle,
                 GenerateGetObjectUrl(f.Key, DateTime.UtcNow.AddHours(24))));
 

@@ -2,13 +2,13 @@ using FluentValidation;
 using Hushify.Api.Constants;
 using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
-using Hushify.Api.Features.Identity.Extensions;
+using Hushify.Api.Features.Drive.Entities;
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
 using Hushify.Api.Features.Identity.Services;
+using Hushify.Api.Filters;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
-using Hushify.Api.Persistence.Entities;
-using Hushify.Api.Persistence.Entities.Drive;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -18,28 +18,34 @@ namespace Hushify.Api.Features.Identity.Endpoints;
 
 public static class Register
 {
-    public static IEndpointRouteBuilder MapRegisterEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapRegisterEndpoints(this RouteGroupBuilder routes)
     {
+        routes.WithParameterValidation(typeof(RegisterRequest), typeof(ConfirmRequest));
+
         routes.MapPost("/register", RegisterHandler).RequireRateLimiting(AppConstants.EmailCodeLimit);
-        routes.MapPost("/register-confirm", RegisterConfirmHandler).WithName(RouteConstants.ConfirmRoute);
+        routes.MapPost("/register-confirm", RegisterConfirmHandler);
+
         return routes;
     }
 
     private static async Task<Results<Ok, ValidationProblem>> RegisterHandler(
-        RegisterRequest req, IValidator<RegisterRequest> validator, IBus bus,
+        RegisterRequest req, IBus bus,
         UserManager<AppUser> userManager, CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var user = await userManager.FindByEmailAsync(req.Email);
-        if (user is not null)
+
+        switch (user)
         {
-            await Task.Delay(50, ct);
-            return TypedResults.Ok();
+            case { EmailConfirmed: true }:
+            {
+                await Task.Delay(50, ct);
+                return TypedResults.Ok();
+            }
+            case { EmailConfirmed: false }:
+            {
+                await bus.Publish(new ResendConfirmation(user.Id), ct);
+                return TypedResults.Ok();
+            }
         }
 
         user = new AppUser(Guid.NewGuid(), req.Email);
@@ -55,17 +61,11 @@ public static class Register
         return TypedResults.Ok();
     }
 
-    private static async Task<Results<Ok, ValidationProblem>> RegisterConfirmHandler(
-        ConfirmRequest req, IValidator<ConfirmRequest> validator, IHttpContextAccessor ctxAccessor,
-        UserManager<AppUser> userManager, IBus bus, IOptions<ConfigOptions> options, ITokenGenerator tokenGenerator,
+    private static async Task<Results<Ok, ValidationProblem>> RegisterConfirmHandler(ConfirmRequest req,
+        IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager,
+        IBus bus, IOptions<ConfigOptions> options, ITokenGenerator tokenGenerator,
         WorkspaceDbContext workspaceDbContext, CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var user = await userManager.FindByEmailAsync(req.Email);
         if (user is null)
         {

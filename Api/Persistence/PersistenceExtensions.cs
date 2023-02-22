@@ -1,5 +1,4 @@
-using Hushify.Api.Persistence.Configurations;
-using Hushify.Api.Persistence.Providers;
+using Hushify.Api.Providers;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,24 +9,12 @@ public static class PersistenceExtensions
     public static IServiceCollection AddEfAndDataProtection(this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
         // EF Core + Data Protection
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"))
-        );
-
+        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
-
-        services.AddDbContext<WorkspaceDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"))
-        );
-
-        // Entity Configurations
-        foreach (var type in typeof(AppDbContext).Assembly.DefinedTypes.Where(t =>
-                     t is { IsAbstract: false, IsGenericTypeDefinition: false } &&
-                     typeof(EntityTypeConfigurationDependency).IsAssignableFrom(t)))
-        {
-            services.AddScoped(typeof(EntityTypeConfigurationDependency), type);
-        }
+        services.AddDbContext<WorkspaceDbContext>(options => options.UseNpgsql(connectionString));
 
         // Workspace provider, required for query filters
         services.AddScoped<IWorkspaceProvider, WorkspaceProvider>();

@@ -1,19 +1,26 @@
 using Hushify.Api.Constants;
+using Hushify.Api.Exceptions;
+using Hushify.Api.Features.Identity.Endpoints;
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Services;
+using Hushify.Api.Features.Identity.Validators;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
-using Hushify.Api.Persistence.Entities;
-using Hushify.Api.Persistence.Validators;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace Hushify.Api.Features.Identity;
 
 public static class IdentityExtensions
 {
+    private const string RefreshToken = "refresh-token";
+
     public static WebApplicationBuilder AddEfBasedIdentity(this WebApplicationBuilder builder)
     {
         builder.Services.AddSingleton<ITokenGenerator, TokenGenerator>();
@@ -83,5 +90,99 @@ public static class IdentityExtensions
         builder.Services.AddAuthorization();
 
         return builder;
+    }
+
+    public static RouteGroupBuilder MapIdentityEndpoints(this IEndpointRouteBuilder routes)
+    {
+        var identityRoutes = routes.MapGroup("/identity");
+        identityRoutes.WithTags("Identity");
+        identityRoutes.RequireRateLimiting(AppConstants.IpRateLimit);
+
+        identityRoutes.MapRegisterEndpoints();
+        identityRoutes.MapLoginEndpoints();
+        identityRoutes.MapRefreshEndpoints();
+        identityRoutes.MapResetPasswordEndpoints();
+        identityRoutes.MapLogoutEndpoints();
+
+        return identityRoutes;
+    }
+
+    private static CookieOptions GetCookieOptions(DateTimeOffset expires, string domain) => new()
+    {
+        IsEssential = true,
+        Secure = true,
+        HttpOnly = true,
+        SameSite = SameSiteMode.Lax,
+        Path = "/identity/refresh",
+        Expires = expires,
+        Domain = domain
+    };
+
+    public static bool GetRefreshTokenCookie(this HttpContext ctx, out string? token)
+    {
+        try
+        {
+            if (!ctx.Request.Cookies.TryGetValue(RefreshToken, out token))
+            {
+                return false;
+            }
+
+            var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+            var protector = dataProtectionProvider.CreateProtector(RefreshToken);
+
+            token = protector.Unprotect(token);
+            return true;
+        }
+        catch (CryptographicException)
+        {
+            token = null;
+            return false;
+        }
+    }
+
+    public static void SetRefreshTokenCookie(this HttpContext ctx, string refreshToken, int ttlInDays, string domain)
+    {
+        var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+        var protector = dataProtectionProvider.CreateProtector(RefreshToken);
+
+        var cookieOptions = GetCookieOptions(DateTimeOffset.UtcNow.AddDays(ttlInDays), domain);
+        ctx.Response.Cookies.Append(RefreshToken, protector.Protect(refreshToken), cookieOptions);
+    }
+
+    public static bool DeleteRefreshTokenCookie(this HttpContext ctx, string domain, out string? token)
+    {
+        try
+        {
+            if (!ctx.Request.Cookies.TryGetValue(RefreshToken, out token))
+            {
+                return false;
+            }
+
+            var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+            var protector = dataProtectionProvider.CreateProtector(RefreshToken);
+
+            token = protector.Unprotect(token);
+            return true;
+        }
+        catch (CryptographicException)
+        {
+            token = null;
+            return false;
+        }
+        finally
+        {
+            ctx.Response.Cookies.Delete(RefreshToken, GetCookieOptions(DateTimeOffset.MinValue, domain));
+        }
+    }
+
+    public static IEnumerable<Claim> GetAccessTokenClaims(this AppUser user)
+    {
+        return new Claim[]
+        {
+            new(AppClaimTypes.Jti, Guid.NewGuid().ToString()),
+            new(AppClaimTypes.Sub, user.Id.ToString()),
+            new(AppClaimTypes.Name, user.Email ?? throw new AppException("User email was null.")),
+            new(AppClaimTypes.Workspace, user.WorkspaceId.ToString())
+        };
     }
 }

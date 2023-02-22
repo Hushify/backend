@@ -2,11 +2,11 @@ using FluentValidation;
 using Hushify.Api.Constants;
 using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
-using Hushify.Api.Features.Identity.Extensions;
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
 using Hushify.Api.Features.Identity.Services;
+using Hushify.Api.Filters;
 using Hushify.Api.Options;
-using Hushify.Api.Persistence.Entities;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -16,24 +16,20 @@ namespace Hushify.Api.Features.Identity.Endpoints;
 
 public static class Login
 {
-    public static IEndpointRouteBuilder MapLoginEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapLoginEndpoints(this RouteGroupBuilder routes)
     {
+        routes.WithParameterValidation(typeof(InitiateLoginRequest), typeof(ConfirmLoginRequest));
+
         routes.MapPost("/login", InitiateLoginHandler).RequireRateLimiting(AppConstants.EmailCodeLimit);
         routes.MapPost("/login-confirm", ConfirmLoginHandler);
         return routes;
     }
 
     private static async Task<Results<Ok, ValidationProblem>> InitiateLoginHandler(
-        InitiateLoginRequest req, IValidator<InitiateLoginRequest> validator,
+        InitiateLoginRequest req,
         UserManager<AppUser> userManager, IOptions<ConfigOptions> options,
         IBus bus, CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var user = await userManager.FindByEmailAsync(req.Email);
         if (user is null)
         {
@@ -53,16 +49,10 @@ public static class Login
     }
 
     private static async Task<Results<Ok<ConfirmLoginResponse>, ValidationProblem>> ConfirmLoginHandler(
-        ConfirmLoginRequest req, IValidator<ConfirmLoginRequest> validator, ITokenGenerator tokenGenerator,
+        ConfirmLoginRequest req, ITokenGenerator tokenGenerator,
         IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager, IOptions<ConfigOptions> options,
         IBus bus, CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var user = await userManager.FindByEmailAsync(req.Email);
         if (user is null)
         {

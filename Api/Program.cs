@@ -4,9 +4,7 @@ using Hushify.Api.Constants;
 using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
 using Hushify.Api.Features.Drive;
-using Hushify.Api.Features.Drive.Endpoints;
 using Hushify.Api.Features.Identity;
-using Hushify.Api.Features.Identity.Endpoints;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
 using Hushify.Api.Resolvers;
@@ -14,6 +12,7 @@ using Hushify.Api.Services;
 using MassTransit;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Net;
 using System.Net.Mail;
@@ -21,6 +20,8 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddSerilog();
 
 // builder.Services
 //     .AddOptions<ConfigOptions>()
@@ -140,6 +141,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 app.UseCors("Cors");
 

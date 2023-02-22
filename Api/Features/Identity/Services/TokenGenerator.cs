@@ -1,5 +1,6 @@
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Options;
-using Hushify.Api.Persistence.Entities;
+using Hushify.Api.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -33,7 +34,6 @@ public sealed class TokenGenerator : ITokenGenerator
     public (string accessTokenNonce, string encAccessToken, string serverPublicKey) GenerateAccessToken(
         IEnumerable<Claim> claims, string publicKey)
     {
-        // generate token that is valid for 30 minutes
         var tokenDescriptor = new JwtSecurityToken
         (
             _options.Jwt.ValidIssuer, _options.Jwt.ValidAudience, claims,

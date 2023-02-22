@@ -1,7 +1,7 @@
-using Hushify.Api.Persistence.Filters;
+using Hushify.Api.Filters;
 using Microsoft.AspNetCore.Identity;
 
-namespace Hushify.Api.Persistence.Entities;
+namespace Hushify.Api.Features.Identity.Entities;
 
 public sealed class AppUser : IdentityUser<Guid>, IWorkspaceFilter
 {

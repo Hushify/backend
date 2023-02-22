@@ -1,4 +1,4 @@
-namespace Hushify.Api.Persistence.Filters;
+namespace Hushify.Api.Filters;
 
 public interface IWorkspaceFilter
 {

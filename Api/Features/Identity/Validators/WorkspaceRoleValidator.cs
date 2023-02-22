@@ -1,7 +1,7 @@
-using Hushify.Api.Persistence.Entities;
+using Hushify.Api.Features.Identity.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace Hushify.Api.Persistence.Validators;
+namespace Hushify.Api.Features.Identity.Validators;
 
 public sealed class WorkspaceRoleValidator : IRoleValidator<AppRole>
 {

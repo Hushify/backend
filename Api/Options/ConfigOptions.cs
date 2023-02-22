@@ -53,4 +53,4 @@ public sealed class StripeOptions
     public string PriceId { get; set; } = default!;
 }
 
-public sealed record AWSOptions(string BucketName, string AccessKey, string SecretKey);
+public sealed record AWSOptions(string KeyId, string ServiceUrl, string BucketName, string AccessKey, string SecretKey);

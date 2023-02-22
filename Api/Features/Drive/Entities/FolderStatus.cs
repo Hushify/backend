@@ -1,4 +1,4 @@
-namespace Hushify.Api.Persistence.Entities.Drive;
+namespace Hushify.Api.Features.Drive.Entities;
 
 public enum FolderStatus
 {

@@ -1,10 +1,9 @@
 using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
-using Hushify.Api.Features.Identity.Extensions;
+using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Services;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
-using Hushify.Api.Persistence.Entities;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +14,7 @@ namespace Hushify.Api.Features.Identity.Endpoints;
 
 public static class Refresh
 {
-    public static IEndpointRouteBuilder MapRefreshEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapRefreshEndpoints(this RouteGroupBuilder routes)
     {
         routes.MapPost("/refresh", RefreshHandler);
         return routes;
@@ -36,7 +35,7 @@ public static class Refresh
 
         if (user is null)
         {
-            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain);
+            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out var _);
             throw new AppException("User was not found.", new[] { "User was not found." });
         }
 
@@ -45,7 +44,7 @@ public static class Refresh
         var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
         if (refreshToken.IsRevoked)
         {
-            RevokeDescendantRefreshTokens(refreshToken, user, userAgent,
+            RefreshToken.RevokeDescendantRefreshTokens(refreshToken, user, userAgent,
                 $"Attempted reuse of revoked ancestor token: {token}");
             appDbContext.Entry(user).State = EntityState.Modified;
             await userManager.UpdateAsync(user);
@@ -53,16 +52,16 @@ public static class Refresh
 
         if (!refreshToken.IsActive)
         {
-            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain);
+            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out var _);
             throw new AppException("Invalid token.", new[] { "Invalid token." });
         }
 
         var newToken = refreshToken.Token;
         if (refreshToken.Expires.Subtract(DateTimeOffset.UtcNow).Days < 3)
         {
-            var newRefreshToken = RotateRefreshToken(refreshToken, tokenGenerator, userAgent);
+            var newRefreshToken = RefreshToken.RotateRefreshToken(refreshToken, tokenGenerator, userAgent);
             user.RefreshTokens.Add(newRefreshToken);
-            RemoveOldRefreshTokens(user, options.Value.RefreshToken.TimeToLiveInDays);
+            RefreshToken.RemoveOldRefreshTokens(user, options.Value.RefreshToken.TimeToLiveInDays);
 
             appDbContext.Entry(user).State = EntityState.Modified;
             await userManager.UpdateAsync(user);
@@ -86,46 +85,6 @@ public static class Refresh
         }
 
         return TypedResults.Ok(new RefreshResponse(accessTokenNonce, encAccessToken, serverPublicKey));
-    }
-
-    private static void RemoveOldRefreshTokens(AppUser user, int ttlInDays) =>
-        user.RefreshTokens.RemoveAll(x =>
-            !x.IsActive && x.Created.AddDays(ttlInDays) <= DateTime.UtcNow);
-
-    private static void RevokeRefreshToken(RefreshToken token, string ipAddress, string userAgent,
-        string? reason = null, string? replacedByTokenId = null)
-    {
-        token.Revoked = DateTime.UtcNow;
-        token.RevokedByUserAgent = userAgent;
-        token.ReasonRevoked = reason;
-        token.ReplacedByTokenId = replacedByTokenId;
-    }
-
-    private static void RevokeDescendantRefreshTokens(RefreshToken refreshToken, AppUser user,
-        string userAgent, string reason)
-    {
-        if (refreshToken.ReplacedByToken is null)
-        {
-            return;
-        }
-
-        var childToken = user.RefreshTokens.SingleOrDefault(x => x.Token == refreshToken.ReplacedByToken.Token);
-        if (childToken!.IsActive)
-        {
-            RevokeRefreshToken(childToken, userAgent, reason);
-        }
-        else
-        {
-            RevokeDescendantRefreshTokens(childToken, user, userAgent, reason);
-        }
-    }
-
-    private static RefreshToken RotateRefreshToken(RefreshToken refreshToken, ITokenGenerator tokenGenerator,
-        string userAgent)
-    {
-        var newRefreshToken = tokenGenerator.GenerateRefreshToken(userAgent);
-        RevokeRefreshToken(refreshToken, userAgent, "Replaced by new token", newRefreshToken.Id);
-        return newRefreshToken;
     }
 }
 

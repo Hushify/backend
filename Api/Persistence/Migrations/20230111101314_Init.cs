@@ -1,6 +1,6 @@
-﻿using System;
-using Hushify.Api.Persistence.Entities;
-using Hushify.Api.Persistence.Entities.Drive;
+﻿using Hushify.Api.Features.Drive.Entities;
+using Hushify.Api.Features.Identity.Entities;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 

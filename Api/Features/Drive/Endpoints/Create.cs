@@ -1,8 +1,9 @@
 using FluentValidation;
 using Hushify.Api.Exceptions;
+using Hushify.Api.Features.Drive.Entities;
+using Hushify.Api.Features.Identity.Entities;
+using Hushify.Api.Filters;
 using Hushify.Api.Persistence;
-using Hushify.Api.Persistence.Entities;
-using Hushify.Api.Persistence.Entities.Drive;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,22 +11,18 @@ namespace Hushify.Api.Features.Drive.Endpoints;
 
 public static class Create
 {
-    public static IEndpointRouteBuilder MapCreateEndpoints(this IEndpointRouteBuilder routes)
+    public static IEndpointRouteBuilder MapCreateEndpoints(this RouteGroupBuilder routes)
     {
+        routes.WithParameterValidation(typeof(CreateFolderRequest));
+
         routes.MapPost("/create-folder", CreateFolderHandler);
         return routes;
     }
 
     private static async Task<Results<Ok<CreateFolderResponse>, ValidationProblem>> CreateFolderHandler(
-        CreateFolderRequest req, IValidator<CreateFolderRequest> validator, WorkspaceDbContext workspaceDbContext,
+        CreateFolderRequest req, WorkspaceDbContext workspaceDbContext,
         CancellationToken ct)
     {
-        var validationResult = await validator.ValidateAsync(req, ct);
-        if (!validationResult.IsValid)
-        {
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
-        }
-
         var workspaceFolder = await workspaceDbContext.Folders.FirstOrDefaultAsync(
             f => f.ParentFolderId == null, ct) ?? throw new AppException("Workspace folder is missing.");
 

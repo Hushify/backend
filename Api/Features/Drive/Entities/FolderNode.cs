@@ -1,6 +1,7 @@
-using Hushify.Api.Persistence.Filters;
+using Hushify.Api.Features.Identity.Entities;
+using Hushify.Api.Filters;
 
-namespace Hushify.Api.Persistence.Entities.Drive;
+namespace Hushify.Api.Features.Drive.Entities;
 
 public sealed class FolderNode : IWorkspaceFilter
 {
