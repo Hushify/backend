@@ -5,7 +5,7 @@ public sealed class ConfigOptions
     public const string Config = nameof(Config);
 
     public EmailOptions Email { get; set; } = default!;
-    public RedisOptions Redis { get; set; } = default!;
+    public RabbitOptions Rabbit { get; set; } = default!;
     public KeyPair RSAKeyPair { get; set; } = default!;
     public KeyPair CryptoBoxKeyPair { get; set; } = default!;
     public JwtOptions Jwt { get; set; } = default!;
@@ -23,7 +23,7 @@ public sealed record AppUrl(string Scheme, string Domain)
     public override string ToString() => $"{Scheme}://{Domain}";
 }
 
-public sealed record RedisOptions(string Host, string VirtualHost, string Username, string Password);
+public sealed record RabbitOptions(string Host, string VirtualHost, string Username, string Password);
 
 public sealed record JwtOptions(string Authority, string ValidAudience,
     string ValidIssuer, int TokenValidityInMins);

@@ -78,7 +78,7 @@ builder.Services.AddMassTransit(config =>
     config.AddConsumersFromNamespaceContaining<IApiMarker>();
     config.UsingRabbitMq((ctx, cfg) =>
     {
-        var redisOptions = ctx.GetRequiredService<IOptions<ConfigOptions>>().Value.Redis;
+        var redisOptions = ctx.GetRequiredService<IOptions<ConfigOptions>>().Value.Rabbit;
         cfg.Host(redisOptions.Host, redisOptions.VirtualHost, h =>
         {
             h.Username(redisOptions.Username);
