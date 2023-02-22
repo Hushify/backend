@@ -361,7 +361,26 @@ DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230111101314_Init') THEN
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-    VALUES ('20230111101314_Init', '7.0.0');
+    VALUES ('20230111101314_Init', '7.0.2');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230222173001_ChangedUploadStatusToFileStatus') THEN
+    ALTER TABLE "Files" RENAME COLUMN "UploadStatus" TO "FileStatus";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230222173001_ChangedUploadStatusToFileStatus') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20230222173001_ChangedUploadStatusToFileStatus', '7.0.2');
     END IF;
 END $EF$;
 COMMIT;
