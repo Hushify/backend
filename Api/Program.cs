@@ -155,6 +155,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseRateLimiter();
+
 app.MapIdentityEndpoints();
 app.MapDriveEndpoints();
 
