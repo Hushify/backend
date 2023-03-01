@@ -77,7 +77,7 @@ public static class Refresh
         var (accessTokenNonce, encAccessToken, serverPublicKey) =
             tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(), user.AsymmetricEncKeyBundle.PublicKey);
 
-        var updateRefreshToken = !string.Equals(newToken, token);
+        var updateRefreshToken = !Equals(newToken, token);
         if (updateRefreshToken)
         {
             ctx.SetRefreshTokenCookie(newToken, options.Value.RefreshToken.TimeToLiveInDays,

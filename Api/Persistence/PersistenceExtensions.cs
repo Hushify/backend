@@ -6,19 +6,18 @@ namespace Hushify.Api.Persistence;
 
 public static class PersistenceExtensions
 {
-    public static IServiceCollection AddEfAndDataProtection(this IServiceCollection services,
-        IConfiguration configuration)
+    public static void AddEfAndDataProtection(this WebApplicationBuilder builder)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
         // EF Core + Data Protection
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
-        services.AddDbContext<WorkspaceDbContext>(options => options.UseNpgsql(connectionString));
+        builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
 
         // Workspace provider, required for query filters
-        services.AddScoped<IWorkspaceProvider, WorkspaceProvider>();
+        builder.Services.AddScoped<IWorkspaceProvider, WorkspaceProvider>();
 
-        return services;
+        // Workspace DbContext - Has Query Filters
+        builder.Services.AddDbContext<WorkspaceDbContext>(options => options.UseNpgsql(connectionString));
     }
 }

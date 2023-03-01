@@ -30,10 +30,6 @@ namespace Hushify.Api.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("BucketName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<long>("EncryptedSize")
                         .HasColumnType("bigint");
 
@@ -41,11 +37,11 @@ namespace Hushify.Api.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<string>("FileStatus")
+                    b.Property<FileS3Config>("FileS3Config")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("jsonb");
 
-                    b.Property<string>("Key")
+                    b.Property<string>("FileStatus")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -54,26 +50,25 @@ namespace Hushify.Api.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.Property<MetadataBundle>("MetadataBundle")
+                        .IsRequired()
                         .HasColumnType("jsonb");
 
                     b.Property<Guid?>("ParentFolderId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Region")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid?>("PreviousVersionId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("WorkspaceId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Key")
-                        .IsUnique();
-
                     b.HasIndex("MaterializedPath");
 
                     b.HasIndex("ParentFolderId");
+
+                    b.HasIndex("PreviousVersionId");
 
                     b.HasIndex("WorkspaceId");
 
@@ -440,6 +435,10 @@ namespace Hushify.Api.Persistence.Migrations
                         .WithMany("Files")
                         .HasForeignKey("ParentFolderId");
 
+                    b.HasOne("Hushify.Api.Features.Drive.Entities.FileNode", "PreviousVersion")
+                        .WithMany()
+                        .HasForeignKey("PreviousVersionId");
+
                     b.HasOne("Hushify.Api.Features.Identity.Entities.Workspace", "Workspace")
                         .WithMany()
                         .HasForeignKey("WorkspaceId")
@@ -447,6 +446,8 @@ namespace Hushify.Api.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ParentFolder");
+
+                    b.Navigation("PreviousVersion");
 
                     b.Navigation("Workspace");
                 });

@@ -12,10 +12,8 @@ public sealed class ConfigOptions
     public RefreshTokenOptions RefreshToken { get; set; } = default!;
     public StripeOptions Stripe { get; set; } = default!;
     public AWSOptions AWS { get; set; } = default!;
-
-    public string RootDomain { get; set; } = default!;
     public AppUrl ApiUrl { get; set; } = default!;
-    public AppUrl WebUrl { get; set; } = default!;
+    public AppUrl[] WebUrls { get; set; } = default!;
 }
 
 public sealed record AppUrl(string Scheme, string Domain)
@@ -25,8 +23,7 @@ public sealed record AppUrl(string Scheme, string Domain)
 
 public sealed record RabbitOptions(string Host, string VirtualHost, string Username, string Password);
 
-public sealed record JwtOptions(string Authority, string ValidAudience,
-    string ValidIssuer, int TokenValidityInMins);
+public sealed record JwtOptions(string Authority, string ValidAudience, string ValidIssuer, int TokenValidityInMins);
 
 public sealed record KeyPair(string PrivateKey, string PublicKey);
 
@@ -34,14 +31,9 @@ public sealed record RefreshTokenOptions(int TimeToLiveInDays);
 
 public sealed class EmailOptions
 {
-    public string FromName { get; set; } = default!;
-    public string FromAddress { get; set; } = default!;
-
-    public string LocalDomain { get; set; } = default!;
-
+    public string From { get; set; } = default!;
     public string Host { get; set; } = default!;
     public int Port { get; set; } = default!;
-
     public string Username { get; set; } = default!;
     public string Password { get; set; } = default!;
 }
@@ -53,4 +45,5 @@ public sealed class StripeOptions
     public string PriceId { get; set; } = default!;
 }
 
-public sealed record AWSOptions(string KeyId, string ServiceUrl, string BucketName, string AccessKey, string SecretKey);
+public sealed record AWSOptions(string KeyId, string ServiceUrl, string BucketName, string AccessKey, string SecretKey,
+    string Region);

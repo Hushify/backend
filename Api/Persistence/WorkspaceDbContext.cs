@@ -42,7 +42,6 @@ public sealed class WorkspaceDbContext : AppDbContext
 
         builder.Entity<FileNode>().HasIndex(x => x.MaterializedPath);
         builder.Entity<FileNode>().HasIndex(x => new { x.Id, x.WorkspaceId }).IsUnique();
-        builder.Entity<FileNode>().HasIndex(x => x.Key).IsUnique();
         builder.Entity<FileNode>().Property(x => x.FileStatus).HasConversion<string>();
         builder.Entity<FileNode>().HasIndex(x => x.WorkspaceId);
         builder.Entity<FileNode>().HasQueryFilter(x => x.WorkspaceId == _workspaceProvider.GetWorkspaceId());

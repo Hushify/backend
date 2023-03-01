@@ -9,5 +9,6 @@ public enum FileStatus
     Deleted,
     PermanentlyDeleted,
     SizeMismatch,
-    MaliciousUpload
+    MaliciousUpload,
+    OldVersion
 }

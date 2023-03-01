@@ -35,5 +35,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, Guid>, IDataProt
 
         builder.Entity<FileNode>().Property(x => x.MetadataBundle).HasColumnType("jsonb");
         builder.Entity<FolderNode>().Property(x => x.MetadataBundle).HasColumnType("jsonb");
+
+        builder.Entity<FileNode>().Property(x => x.FileS3Config).HasColumnType("jsonb");
     }
 }

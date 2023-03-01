@@ -23,42 +23,32 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddSerilog();
 
-// builder.Services
-//     .AddOptions<ConfigOptions>()
-//     .BindConfiguration(ConfigOptions.Config)
-//     .ValidateDataAnnotations();
+var configSection = builder.Configuration.GetSection(ConfigOptions.Config);
+builder.Services.Configure<ConfigOptions>(configSection);
 
-builder.Services.Configure<ConfigOptions>(builder.Configuration.GetSection(ConfigOptions.Config));
+var configOptions = configSection.Get<ConfigOptions>() ?? throw new AppException("Missing config.");
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddEfAndDataProtection(builder.Configuration);
-
-builder.AddEfBasedIdentity();
-builder.AddDrive();
+builder.AddEfAndDataProtection();
+builder.AddEfBasedIdentity(configOptions.Jwt);
+builder.AddDrive(configOptions.AWS);
 
 // FluentValidation and Validators
 ValidatorOptions.Global.PropertyNameResolver = CamelCasePropertyNameResolver.ResolvePropertyName;
 builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(IApiMarker)));
 
-var fromEmail = builder.Configuration.GetValue<string?>("Config:Smtp:From") ??
-                throw new AppException("Missing smtp from email.");
-var host = builder.Configuration.GetValue<string?>("Config:Smtp:Host") ??
-           throw new AppException("Missing smtp host.");
-var port = builder.Configuration.GetValue<int?>("Config:Smtp:Port") ??
-           throw new AppException("Missing smtp port.");
-var username = builder.Configuration.GetValue<string?>("Config:Smtp:Username");
-var password = builder.Configuration.GetValue<string?>("Config:Smtp:Password");
-
-var isSmtpUsernameEmpty = string.IsNullOrWhiteSpace(username);
+var isSmtpUsernameEmpty = string.IsNullOrWhiteSpace(configOptions.Email.Username);
 
 // FluentEmail
 builder.Services
-    .AddFluentEmail(fromEmail)
+    .AddFluentEmail(configOptions.Email.From)
     .AddRazorRenderer()
-    .AddSmtpSender(() => new SmtpClient(host, port)
+    .AddSmtpSender(() => new SmtpClient(configOptions.Email.Host, configOptions.Email.Port)
     {
-        Credentials = isSmtpUsernameEmpty ? null : new NetworkCredential(username, password),
+        Credentials = isSmtpUsernameEmpty
+            ? null
+            : new NetworkCredential(configOptions.Email.Username, configOptions.Email.Password),
         EnableSsl = !isSmtpUsernameEmpty,
         DeliveryMethod = SmtpDeliveryMethod.Network
     });
@@ -78,7 +68,7 @@ builder.Services.AddMassTransit(config =>
     config.AddConsumersFromNamespaceContaining<IApiMarker>();
     config.UsingRabbitMq((ctx, cfg) =>
     {
-        var redisOptions = ctx.GetRequiredService<IOptions<ConfigOptions>>().Value.Rabbit;
+        var redisOptions = ctx.GetRequiredService<IOptionsMonitor<ConfigOptions>>().CurrentValue.Rabbit;
         cfg.Host(redisOptions.Host, redisOptions.VirtualHost, h =>
         {
             h.Username(redisOptions.Username);
@@ -130,14 +120,11 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddCors(options =>
 {
-    var scheme = builder.Configuration.GetValue<string>("Config:WebUrl:Scheme") ??
-                 throw new AppException("Missing web scheme.");
-    var domain = builder.Configuration.GetValue<string>("Config:WebUrl:Domain") ??
-                 throw new AppException("Missing web domain.");
-
     options.DefaultPolicyName = "Cors";
     options.AddDefaultPolicy(policyBuilder =>
-        policyBuilder.WithOrigins($"{scheme}://{domain}").AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+        policyBuilder.WithOrigins(
+            configOptions.WebUrls.Select(origin => origin.ToString()).ToArray()
+        ).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
 });
 
 var app = builder.Build();

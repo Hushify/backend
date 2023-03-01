@@ -1,6 +1,6 @@
-﻿using Hushify.Api.Features.Drive.Entities;
+﻿using System;
+using Hushify.Api.Features.Drive.Entities;
 using Hushify.Api.Features.Identity.Entities;
-using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -273,18 +273,22 @@ namespace Hushify.Api.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     MaterializedPath = table.Column<string>(type: "text", nullable: false),
                     FileKeyBundle = table.Column<SecretKeyBundle>(type: "jsonb", nullable: false),
-                    MetadataBundle = table.Column<MetadataBundle>(type: "jsonb", nullable: true),
-                    Region = table.Column<string>(type: "text", nullable: false),
-                    BucketName = table.Column<string>(type: "text", nullable: false),
-                    Key = table.Column<string>(type: "text", nullable: false),
+                    MetadataBundle = table.Column<MetadataBundle>(type: "jsonb", nullable: false),
+                    FileS3Config = table.Column<FileS3Config>(type: "jsonb", nullable: false),
                     EncryptedSize = table.Column<long>(type: "bigint", nullable: false),
-                    UploadStatus = table.Column<string>(type: "text", nullable: false),
+                    FileStatus = table.Column<string>(type: "text", nullable: false),
                     ParentFolderId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PreviousVersionId = table.Column<Guid>(type: "uuid", nullable: true),
                     WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Files", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Files_Files_PreviousVersionId",
+                        column: x => x.PreviousVersionId,
+                        principalTable: "Files",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Files_Folders_ParentFolderId",
                         column: x => x.ParentFolderId,
@@ -358,12 +362,6 @@ namespace Hushify.Api.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Files_Key",
-                table: "Files",
-                column: "Key",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Files_MaterializedPath",
                 table: "Files",
                 column: "MaterializedPath");
@@ -372,6 +370,11 @@ namespace Hushify.Api.Persistence.Migrations
                 name: "IX_Files_ParentFolderId",
                 table: "Files",
                 column: "ParentFolderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Files_PreviousVersionId",
+                table: "Files",
+                column: "PreviousVersionId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Files_WorkspaceId",

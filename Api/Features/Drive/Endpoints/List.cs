@@ -19,6 +19,12 @@ public static class List
     {
         routes.MapGet("/list", ListHandler);
 
+        routes.MapGet("/stats", async (IDriveService driveService, CancellationToken ct) =>
+        {
+            var stats = await driveService.GetDriveStatsAsync(ct);
+            return TypedResults.Ok(new StorageStatsResponse(stats.Total, stats.Used));
+        });
+
         routes.MapGet("/test", (CryptoKeys keys, IOptions<ConfigOptions> options, [FromQuery] string resource) =>
         {
             var key = new StringReader(keys.PrivateSecurityKey.Rsa.ExportRSAPrivateKeyPem());
@@ -48,7 +54,7 @@ public static class List
 }
 
 public sealed record ListResponse(Guid WorkspaceFolderId, Guid CurrentFolderId, IEnumerable<BreadcrumbVM> Breadcrumbs,
-    IEnumerable<FileNodeVM> files, IEnumerable<FolderNodeVM> folders);
+    IEnumerable<FileNodeVM> Files, IEnumerable<FolderNodeVM> Folders);
 
 public sealed record BreadcrumbVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle FolderKey);
 
@@ -56,3 +62,5 @@ public sealed record FileNodeVM(Guid Id, MetadataBundle? MetadataBundle, long En
     string FileUrl);
 
 public sealed record FolderNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle FolderKey);
+
+public sealed record StorageStatsResponse(long Total, long Used);

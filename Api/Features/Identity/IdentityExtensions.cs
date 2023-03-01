@@ -9,7 +9,6 @@ using Hushify.Api.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -21,7 +20,7 @@ public static class IdentityExtensions
 {
     private const string RefreshToken = "refresh-token";
 
-    public static WebApplicationBuilder AddEfBasedIdentity(this WebApplicationBuilder builder)
+    public static void AddEfBasedIdentity(this WebApplicationBuilder builder, JwtOptions jwtOptions)
     {
         builder.Services.AddSingleton<ITokenGenerator, TokenGenerator>();
         builder.Services.AddSingleton<CryptoKeys>();
@@ -54,7 +53,6 @@ public static class IdentityExtensions
             .AddJwtBearer(options =>
             {
                 var sp = builder.Services.BuildServiceProvider();
-                var opts = sp.GetRequiredService<IOptions<ConfigOptions>>().Value;
 
                 // options.MapInboundClaims = false;
                 options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
@@ -64,8 +62,8 @@ public static class IdentityExtensions
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ClockSkew = TimeSpan.Zero,
-                    ValidAudience = opts.Jwt.ValidAudience,
-                    ValidIssuer = opts.Jwt.ValidIssuer,
+                    ValidAudience = jwtOptions.ValidAudience,
+                    ValidIssuer = jwtOptions.ValidIssuer,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = sp.GetRequiredService<CryptoKeys>().PublicSecurityKey,
                     RequireExpirationTime = true,
@@ -88,11 +86,9 @@ public static class IdentityExtensions
             });
 
         builder.Services.AddAuthorization();
-
-        return builder;
     }
 
-    public static RouteGroupBuilder MapIdentityEndpoints(this IEndpointRouteBuilder routes)
+    public static void MapIdentityEndpoints(this IEndpointRouteBuilder routes)
     {
         var identityRoutes = routes.MapGroup("/identity");
         identityRoutes.WithTags("Identity");
@@ -103,8 +99,7 @@ public static class IdentityExtensions
         identityRoutes.MapRefreshEndpoints();
         identityRoutes.MapResetPasswordEndpoints();
         identityRoutes.MapLogoutEndpoints();
-
-        return identityRoutes;
+        identityRoutes.MapSessionEndpoints();
     }
 
     private static CookieOptions GetCookieOptions(DateTimeOffset expires, string domain) => new()

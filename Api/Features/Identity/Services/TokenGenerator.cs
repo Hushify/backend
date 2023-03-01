@@ -1,6 +1,5 @@
 using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Options;
-using Hushify.Api.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
