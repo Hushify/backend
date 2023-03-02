@@ -81,7 +81,8 @@ public sealed class DriveS3Service : IDriveService
 
     public async Task<(long Total, long Used)> GetDriveStatsAsync(CancellationToken cancellationToken)
     {
-        var total = await _context.Workspaces.Select(w => w.StorageSize).FirstOrDefaultAsync(cancellationToken);
+        var total = await _context.Workspaces.Where(w => w.Id == _workspaceProvider.GetWorkspaceId())
+            .Select(w => w.StorageSize).FirstOrDefaultAsync(cancellationToken);
 
         var used = await _context.Files
             .Where(node =>
