@@ -1,6 +1,5 @@
 using FluentValidation;
 using Hushify.Api.Constants;
-using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
 using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
@@ -53,33 +52,29 @@ public static class Login
         IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager, IOptions<ConfigOptions> options,
         IBus bus, CancellationToken ct)
     {
-        var user = await userManager.FindByEmailAsync(req.Email);
-        if (user is null)
-        {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                { { "errors", new[] { "Invalid email or code." } } });
-        }
+        var invalidEmailOrCode = TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            { { "errors", new[] { "Wrong email or code." } } });
 
-        if (!user.EmailConfirmed)
+        var user = await userManager.FindByEmailAsync(req.Email);
+        if (user is null || !user.EmailConfirmed || user.CryptoProperties is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                { { "errors", new[] { "Wrong email or code." } } });
+            return invalidEmailOrCode;
         }
 
         var isCodeValid =
             await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, req.Code);
         if (!isCodeValid)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                { { "errors", new[] { "Wrong email or code." } } });
+            return invalidEmailOrCode;
         }
 
-        var ctx = ctxAccessor.HttpContext ?? throw new AppException("HttpContext was null.");
+        var ctx = ctxAccessor.HttpContext ?? throw new Exception("Something bad happened.");
 
         var userAgent = ctx.GetUserAgent();
 
-        var (accessTokenNonce, encAccessToken, serverPublicKey) =
-            tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(), user.AsymmetricEncKeyBundle!.PublicKey);
+        var (accessTokenNonce, encryptedAccessToken, serverPublicKey) =
+            tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(),
+                user.CryptoProperties.AsymmetricKeyBundle.PublicKey);
         var refreshToken = tokenGenerator.GenerateRefreshToken(userAgent);
 
         user.RefreshTokens.Add(refreshToken);
@@ -88,11 +83,9 @@ public static class Login
         ctx.SetRefreshTokenCookie(refreshToken.Token, options.Value.RefreshToken.TimeToLiveInDays,
             options.Value.ApiUrl.Domain);
 
-        return TypedResults.Ok(new ConfirmLoginResponse(user.Salt!, encAccessToken, accessTokenNonce, serverPublicKey,
-            user.MasterKeyBundle!.Nonce, user.MasterKeyBundle.EncKey, user.AsymmetricEncKeyBundle.Nonce,
-            user.AsymmetricEncKeyBundle.PublicKey, user.AsymmetricEncKeyBundle.EncPrivateKey,
-            user.SigningKeyBundle!.Nonce,
-            user.SigningKeyBundle.PublicKey, user.SigningKeyBundle.EncPrivateKey));
+        return TypedResults.Ok(
+            new ConfirmLoginResponse(encryptedAccessToken, accessTokenNonce, serverPublicKey, user.CryptoProperties)
+        );
     }
 }
 
@@ -103,10 +96,8 @@ public sealed class InitiateLoginRequestValidator : AbstractValidator<InitiateLo
     public InitiateLoginRequestValidator()
     {
         RuleFor(c => c.Email)
-            .NotEmpty()
-            .WithMessage("Email address can not be empty.")
-            .EmailAddress()
-            .WithMessage((request, _) => $"{request.Email} is not a valid email address.");
+            .NotEmpty().WithMessage("Email address can not be empty.")
+            .EmailAddress().WithMessage((request, _) => $"{request.Email} is not a valid email address.");
     }
 }
 
@@ -124,7 +115,5 @@ public sealed class ConfirmLoginRequestValidator : AbstractValidator<ConfirmLogi
     }
 }
 
-public sealed record ConfirmLoginResponse(string Salt, string EncAccessToken, string EncAccessTokenNonce,
-    string ServerPublicKey, string MasterKeyNonce, string EncMasterKey, string AsymmetricEncKeyNonce,
-    string AsymmetricEncPublicKey, string EncAsymmetricPrivateKey, string SigningKeyNonce, string SigningPublicKey,
-    string EncSigningPrivateKey);
+public sealed record ConfirmLoginResponse(string EncryptedAccessToken, string AccessTokenNonce, string ServerPublicKey,
+    UserCryptoProperties CryptoProperties);

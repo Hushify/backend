@@ -1,25 +1,17 @@
-using Hushify.Api.Constants;
-using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
+using Hushify.Api.Features.Identity.Services;
 using MassTransit;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.FeatureManagement;
 
 namespace Hushify.Api.Features.Identity.Messaging.Handlers;
 
 public sealed class CreateStripeCustomer : IConsumer<EmailConfirmed>
 {
-    private readonly IFeatureManager _featureManager;
-    private readonly UserManager<AppUser> _userManager;
+    private readonly IStripeService _stripeService;
 
-    public CreateStripeCustomer(UserManager<AppUser> userManager, IFeatureManager featureManager)
-    {
-        _userManager = userManager;
-        _featureManager = featureManager;
-    }
+    public CreateStripeCustomer(IStripeService stripeService) => _stripeService = stripeService;
 
     public async Task Consume(ConsumeContext<EmailConfirmed> context)
     {
-        var stripeEnabled = await _featureManager.IsEnabledAsync(FeatureConstants.Stripe);
+        await _stripeService.CreateCustomerAsync(context.Message.Id, context.CancellationToken);
     }
 }

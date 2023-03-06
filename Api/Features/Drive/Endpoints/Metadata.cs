@@ -46,7 +46,7 @@ public sealed class UpdateMetadataRequestValidator : AbstractValidator<UpdateMet
     public UpdateMetadataRequestValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
-        RuleFor(x => x.Type).NotNull().NotEmpty();
+        RuleFor(x => x.Type).NotEmpty();
         RuleFor(x => x.MetadataBundle).NotNull();
     }
 }

@@ -30,11 +30,11 @@ public static class List
 public sealed record ListResponse(Guid WorkspaceFolderId, Guid CurrentFolderId, IEnumerable<BreadcrumbVM> Breadcrumbs,
     IEnumerable<FileNodeVM> Files, IEnumerable<FolderNodeVM> Folders);
 
-public sealed record BreadcrumbVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle FolderKey);
+public sealed record BreadcrumbVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle);
 
-public sealed record FileNodeVM(Guid Id, MetadataBundle? MetadataBundle, long EncryptedSize, SecretKeyBundle FileKey,
-    string FileUrl);
+public sealed record FileNodeVM(Guid Id, MetadataBundle? MetadataBundle, long EncryptedSize, SecretKeyBundle KeyBundle,
+    string Url);
 
-public sealed record FolderNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle FolderKey);
+public sealed record FolderNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle);
 
 public sealed record StorageStatsResponse(long Total, long Used);

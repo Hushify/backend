@@ -7,20 +7,20 @@ public sealed class FolderNode : IWorkspaceFilter
 {
     private FolderNode() { }
 
-    public FolderNode(Guid id, string materializedPath, Guid workspaceId, SecretKeyBundle folderKeyBundle,
+    public FolderNode(Guid id, string materializedPath, Guid workspaceId, SecretKeyBundle keyBundle,
         MetadataBundle? metadataBundle, Guid? parentFolderId)
     {
         Id = id;
         MaterializedPath = materializedPath;
         WorkspaceId = workspaceId;
-        FolderKeyBundle = folderKeyBundle;
+        KeyBundle = keyBundle;
         MetadataBundle = metadataBundle;
         ParentFolderId = parentFolderId;
     }
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string MaterializedPath { get; set; } = default!;
-    public SecretKeyBundle FolderKeyBundle { get; set; } = default!;
+    public SecretKeyBundle KeyBundle { get; set; } = default!;
     public MetadataBundle? MetadataBundle { get; set; }
 
     public FolderStatus FolderStatus { get; set; } = FolderStatus.Normal;

@@ -33,7 +33,7 @@ public static class MultipartUpload
         var response = await driveService.PrepareForMultipartUploadAsync(req.ParentFolderId, req.PreviousVersionId,
             req.NumberOfChunks,
             req.EncryptedSize,
-            req.FileKeyBundle, req.MetadataBundle, ct);
+            req.KeyBundle, req.MetadataBundle, ct);
 
         return TypedResults.Ok(response);
     }
@@ -89,8 +89,7 @@ public static class MultipartUpload
 }
 
 public sealed record CreateMultipartUploadRequest(Guid ParentFolderId, Guid? PreviousVersionId, int NumberOfChunks,
-    int EncryptedSize,
-    MetadataBundle MetadataBundle, SecretKeyBundle FileKeyBundle);
+    int EncryptedSize, MetadataBundle MetadataBundle, SecretKeyBundle KeyBundle);
 
 public sealed class CreateMultipartUploadRequestValidator : AbstractValidator<CreateMultipartUploadRequest>
 {
@@ -100,7 +99,7 @@ public sealed class CreateMultipartUploadRequestValidator : AbstractValidator<Cr
         RuleFor(x => x.EncryptedSize).GreaterThan(0);
         RuleFor(x => x.NumberOfChunks).GreaterThan(0);
         RuleFor(x => x.MetadataBundle).NotNull();
-        RuleFor(x => x.FileKeyBundle).NotNull();
+        RuleFor(x => x.KeyBundle).NotNull();
     }
 }
 

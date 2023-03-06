@@ -69,13 +69,14 @@ public static class Refresh
             newToken = newRefreshToken.Token;
         }
 
-        if (user.AsymmetricEncKeyBundle is null)
+        if (user.CryptoProperties is null)
         {
             throw new AppException("User has not been initialized yet.");
         }
 
-        var (accessTokenNonce, encAccessToken, serverPublicKey) =
-            tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(), user.AsymmetricEncKeyBundle.PublicKey);
+        var (accessTokenNonce, encryptedAccessToken, serverPublicKey) =
+            tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(),
+                user.CryptoProperties.AsymmetricKeyBundle.PublicKey);
 
         var updateRefreshToken = !Equals(newToken, token);
         if (updateRefreshToken)
@@ -84,8 +85,8 @@ public static class Refresh
                 options.Value.ApiUrl.Domain);
         }
 
-        return TypedResults.Ok(new RefreshResponse(accessTokenNonce, encAccessToken, serverPublicKey));
+        return TypedResults.Ok(new RefreshResponse(accessTokenNonce, encryptedAccessToken, serverPublicKey));
     }
 }
 
-public sealed record RefreshResponse(string AccessTokenNonce, string EncAccessToken, string ServerPublicKey);
+public sealed record RefreshResponse(string AccessTokenNonce, string EncryptedAccessToken, string ServerPublicKey);

@@ -66,27 +66,23 @@ public static class Register
         IBus bus, IOptions<ConfigOptions> options, ITokenGenerator tokenGenerator,
         WorkspaceDbContext workspaceDbContext, CancellationToken ct)
     {
+        var invalidEmailOrCode = TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            { { "errors", new[] { "Wrong email or code." } } });
+
         var user = await userManager.FindByEmailAsync(req.Email);
         if (user is null)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                { { "errors", new[] { "Invalid email or code." } } });
+            return invalidEmailOrCode;
         }
 
         var result = await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, req.Code);
         if (!result)
         {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                { { "errors", new[] { "Invalid email or code." } } });
+            return invalidEmailOrCode;
         }
 
         user.EmailConfirmed = true;
-        user.Salt = req.Salt;
-        user.MasterKeyBundle = req.MasterKeyBundle;
-        user.RecoveryMasterKeyBundle = req.RecoveryMasterKeyBundle;
-        user.RecoveryKeyBundle = req.RecoveryKeyBundle;
-        user.AsymmetricEncKeyBundle = req.AsymmetricEncKeyBundle; // TODO: Add validation
-        user.SigningKeyBundle = req.SigningKeyBundle; // TODO: Add validation
+        user.CryptoProperties = req.CryptoProperties;
 
         var ctx = ctxAccessor.HttpContext ?? throw new AppException("HttpContext was null.");
 
@@ -98,7 +94,8 @@ public static class Register
         await userManager.UpdateAsync(user);
 
         await workspaceDbContext.Folders.AddAsync(
-            new FolderNode(user.WorkspaceId, $"workspace-{user.WorkspaceId}/", user.WorkspaceId, user.MasterKeyBundle,
+            new FolderNode(user.WorkspaceId, $"workspace-{user.WorkspaceId}/", user.WorkspaceId,
+                user.CryptoProperties!.MasterKeyBundle,
                 null, null),
             ct);
         await workspaceDbContext.SaveChangesAsync(ct);
@@ -117,14 +114,13 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
 {
     public RegisterRequestValidator()
     {
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Email address can not be empty.").EmailAddress()
-            .WithMessage((request, _) => $"{request.Email} is not a valid email address.");
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email address can not be empty.")
+            .EmailAddress().WithMessage((request, _) => $"{request.Email} is not a valid email address.");
     }
 }
 
-public sealed record ConfirmRequest(string Email, string Code, string Salt, SecretKeyBundle MasterKeyBundle,
-    SecretKeyBundle RecoveryMasterKeyBundle, SecretKeyBundle RecoveryKeyBundle, KeyPairBundle AsymmetricEncKeyBundle,
-    KeyPairBundle SigningKeyBundle);
+public sealed record ConfirmRequest(string Email, string Code, UserCryptoProperties CryptoProperties);
 
 public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
 {
@@ -133,11 +129,11 @@ public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
         RuleFor(c => c).NotNull();
         RuleFor(c => c.Email).NotEmpty().EmailAddress();
         RuleFor(c => c.Code).NotEmpty();
-        RuleFor(x => x.Salt).NotEmpty().Length(22);
-        RuleFor(x => x.MasterKeyBundle).NotNull().WithName("Master Key Bundle");
-        RuleFor(x => x.RecoveryMasterKeyBundle).NotNull().WithName("Recovery Master Key Bundle");
-        RuleFor(x => x.RecoveryKeyBundle).NotNull().WithName("Recovery Key Bundle");
-        RuleFor(x => x.AsymmetricEncKeyBundle).NotNull().WithName("Asymmetric Encryption Key Bundle");
-        RuleFor(x => x.SigningKeyBundle).NotNull().WithName("Signing Key Bundle");
+        RuleFor(x => x.CryptoProperties.Salt).NotEmpty();
+        RuleFor(x => x.CryptoProperties.MasterKeyBundle).NotNull().WithName("Master Key Bundle");
+        RuleFor(x => x.CryptoProperties.RecoveryMasterKeyBundle).NotNull().WithName("Recovery Master Key Bundle");
+        RuleFor(x => x.CryptoProperties.RecoveryKeyBundle).NotNull().WithName("Recovery Key Bundle");
+        RuleFor(x => x.CryptoProperties.AsymmetricKeyBundle).NotNull().WithName("Asymmetric Key Bundle");
+        RuleFor(x => x.CryptoProperties.SigningKeyBundle).NotNull().WithName("Signing Key Bundle");
     }
 }

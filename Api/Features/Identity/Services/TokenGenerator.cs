@@ -13,7 +13,7 @@ namespace Hushify.Api.Features.Identity.Services;
 
 public interface ITokenGenerator
 {
-    (string accessTokenNonce, string encAccessToken, string serverPublicKey) GenerateAccessToken(
+    (string accessTokenNonce, string encryptedAccessToken, string serverPublicKey) GenerateAccessToken(
         IEnumerable<Claim> claims, string publicKey);
 
     RefreshToken GenerateRefreshToken(string userAgent);
@@ -30,7 +30,7 @@ public sealed class TokenGenerator : ITokenGenerator
         _privateSecurityKey = cryptoKeys.PrivateSecurityKey;
     }
 
-    public (string accessTokenNonce, string encAccessToken, string serverPublicKey) GenerateAccessToken(
+    public (string accessTokenNonce, string encryptedAccessToken, string serverPublicKey) GenerateAccessToken(
         IEnumerable<Claim> claims, string publicKey)
     {
         var tokenDescriptor = new JwtSecurityToken

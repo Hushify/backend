@@ -7,7 +7,5 @@ public sealed class FileS3Config : ISkipWorkspaceFilter
     public string Region { get; set; } = default!;
     public string BucketName { get; set; } = default!;
     public string Key { get; set; } = default!;
-    public string? UploadId { get; set; } = default;
-
-    public string? Nonce { get; set; }
+    public string UploadId { get; set; } = default!;
 }

@@ -40,9 +40,9 @@ public sealed class EmailOptions
 
 public sealed class StripeOptions
 {
+    public bool IsEnabled { get; set; } = false;
     public string PublishableKey { get; set; } = default!;
     public string SecretKey { get; set; } = default!;
-    public string PriceId { get; set; } = default!;
 }
 
 public sealed record AWSOptions(string KeyId, string ServiceUrl, string BucketName, string AccessKey, string SecretKey,

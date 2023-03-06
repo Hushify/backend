@@ -14,6 +14,17 @@ using Microsoft.Extensions.Options;
 
 namespace Hushify.Api.Features.Drive.Services;
 
+public interface IDriveService
+{
+    Task<ListResponse> ListAsync(Guid? currentFolderId, CancellationToken cancellationToken);
+    Task<(long Total, long Used)> GetDriveStatsAsync(CancellationToken cancellationToken);
+
+    Task<CreateMultipartUploadResponse> PrepareForMultipartUploadAsync(Guid parentFolderId, Guid? previousVersionId,
+        int numberOfChunks,
+        long encryptedSize,
+        SecretKeyBundle keyBundle, MetadataBundle metadataBundle, CancellationToken cancellationToken);
+}
+
 public sealed class DriveS3Service : IDriveService
 {
     private readonly AWSOptions _awsOptions;
@@ -52,12 +63,12 @@ public sealed class DriveS3Service : IDriveService
 
         var files = currentFolder.Files
             .Where(f => f.FileStatus == FileStatus.UploadFinished)
-            .Select(f => new FileNodeVM(f.Id, f.MetadataBundle, f.EncryptedSize, f.FileKeyBundle,
+            .Select(f => new FileNodeVM(f.Id, f.MetadataBundle, f.EncryptedSize, f.KeyBundle,
                 GetCFUrl(f.FileS3Config.Key, DateTime.UtcNow.AddHours(24))));
 
         var folders = currentFolder.Folders
             .Where(f => f.FolderStatus == FolderStatus.Normal)
-            .Select(f => new FolderNodeVM(f.Id, f.MetadataBundle, f.FolderKeyBundle));
+            .Select(f => new FolderNodeVM(f.Id, f.MetadataBundle, f.KeyBundle));
 
         if (currentFolder.ParentFolderId is null)
         {
@@ -67,7 +78,7 @@ public sealed class DriveS3Service : IDriveService
         var current = currentFolder;
         while (current is not null)
         {
-            breadcrumbs.Add(new BreadcrumbVM(current.Id, current.MetadataBundle, current.FolderKeyBundle));
+            breadcrumbs.Add(new BreadcrumbVM(current.Id, current.MetadataBundle, current.KeyBundle));
             current = await _context.Folders
                 .Include(sf => sf.ParentFolder)
                 .FirstOrDefaultAsync(sf => sf.Id == current.ParentFolderId
@@ -97,7 +108,7 @@ public sealed class DriveS3Service : IDriveService
         Guid? previousVersionId,
         int numberOfChunks,
         long encryptedSize,
-        SecretKeyBundle fileKeyBundle, MetadataBundle metadataBundle, CancellationToken cancellationToken)
+        SecretKeyBundle keyBundle, MetadataBundle metadataBundle, CancellationToken cancellationToken)
     {
         var storageStats = await GetDriveStatsAsync(cancellationToken);
 
@@ -105,7 +116,6 @@ public sealed class DriveS3Service : IDriveService
         {
             throw new AppException("You have already used up all your storage.");
         }
-
 
         var parentFolder =
             await _context.Folders.FirstOrDefaultAsync(node => node.Id == parentFolderId, cancellationToken);
@@ -130,7 +140,7 @@ public sealed class DriveS3Service : IDriveService
         };
 
         var file = new FileNode(fileId, materializedPath, _workspaceProvider.GetWorkspaceId(), parentFolder.Id,
-            fileS3Config, fileKeyBundle, metadataBundle)
+            fileS3Config, keyBundle, metadataBundle)
         {
             EncryptedSize = encryptedSize,
             PreviousVersion = previousVersion

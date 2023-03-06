@@ -33,6 +33,7 @@ builder.Services.AddHttpContextAccessor();
 builder.AddEfAndDataProtection();
 builder.AddEfBasedIdentity(configOptions.Jwt);
 builder.AddDrive(configOptions.AWS);
+builder.AddStripeServices(configOptions.Stripe);
 
 // FluentValidation and Validators
 ValidatorOptions.Global.PropertyNameResolver = CamelCasePropertyNameResolver.ResolvePropertyName;

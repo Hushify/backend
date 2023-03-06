@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Stripe;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -86,6 +87,28 @@ public static class IdentityExtensions
             });
 
         builder.Services.AddAuthorization();
+    }
+
+    public static void AddStripeServices(this WebApplicationBuilder builder, StripeOptions stripeOptions)
+    {
+        builder.Services.AddHttpClient("Stripe");
+        builder.Services.AddTransient<IStripeClient, StripeClient>(serviceProvider =>
+        {
+            var clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var httpClient = new SystemNetHttpClient(clientFactory.CreateClient("Stripe"),
+                StripeConfiguration.MaxNetworkRetries, enableTelemetry: StripeConfiguration.EnableTelemetry);
+
+            return new StripeClient(stripeOptions.SecretKey, httpClient: httpClient);
+        });
+
+        if (stripeOptions.IsEnabled)
+        {
+            builder.Services.AddTransient<IStripeService, StripeService>();
+        }
+        else
+        {
+            builder.Services.AddTransient<IStripeService, NoOpStripeService>();
+        }
     }
 
     public static void MapIdentityEndpoints(this IEndpointRouteBuilder routes)

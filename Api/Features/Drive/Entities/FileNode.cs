@@ -8,13 +8,13 @@ public sealed class FileNode : IWorkspaceFilter
     private FileNode() { }
 
     public FileNode(Guid id, string materializedPath, Guid workspaceId, Guid parentFolderId, FileS3Config fileS3Config,
-        SecretKeyBundle fileKeyBundle,
+        SecretKeyBundle keyBundle,
         MetadataBundle metadataBundle)
     {
         Id = id;
         MaterializedPath = materializedPath;
         WorkspaceId = workspaceId;
-        FileKeyBundle = fileKeyBundle;
+        KeyBundle = keyBundle;
         MetadataBundle = metadataBundle;
         ParentFolderId = parentFolderId;
         FileS3Config = fileS3Config;
@@ -22,7 +22,7 @@ public sealed class FileNode : IWorkspaceFilter
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string MaterializedPath { get; set; } = default!;
-    public SecretKeyBundle FileKeyBundle { get; set; } = default!;
+    public SecretKeyBundle KeyBundle { get; set; } = default!;
     public MetadataBundle MetadataBundle { get; set; } = default!;
 
     public FileS3Config FileS3Config { get; set; } = default!;

@@ -37,7 +37,7 @@ public static class Create
         var materializedPath = $"{parentFolder.MaterializedPath}{folderId}/";
 
         await workspaceDbContext.Folders.AddAsync(
-            new FolderNode(folderId, materializedPath, workspaceFolder.Id, req.FolderKeyBundle, req.MetadataBundle,
+            new FolderNode(folderId, materializedPath, workspaceFolder.Id, req.KeyBundle, req.MetadataBundle,
                 parentFolder.Id),
             ct);
 
@@ -48,14 +48,14 @@ public static class Create
 }
 
 public sealed record CreateFolderRequest(Guid? ParentFolderId, MetadataBundle MetadataBundle,
-    SecretKeyBundle FolderKeyBundle);
+    SecretKeyBundle KeyBundle);
 
 public sealed class CreateFolderRequestValidator : AbstractValidator<CreateFolderRequest>
 {
     public CreateFolderRequestValidator()
     {
         RuleFor(x => x.MetadataBundle).NotNull();
-        RuleFor(x => x.FolderKeyBundle).NotNull();
+        RuleFor(x => x.KeyBundle).NotNull();
     }
 }
 

@@ -20,21 +20,11 @@ public sealed class AppUser : IdentityUser<Guid>, IWorkspaceFilter
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? ModifiedAt { get; set; }
-    public string? Salt { get; set; }
 
-    public SecretKeyBundle? MasterKeyBundle { get; set; }
-    public SecretKeyBundle? RecoveryMasterKeyBundle { get; set; }
-    public SecretKeyBundle? RecoveryKeyBundle { get; set; }
-
-    public KeyPairBundle? AsymmetricEncKeyBundle { get; set; }
-    public KeyPairBundle? SigningKeyBundle { get; set; }
+    public UserCryptoProperties? CryptoProperties { get; set; }
 
     public List<RefreshToken> RefreshTokens { get; set; } = new();
 
     public Workspace Workspace { get; set; } = default!;
     public Guid WorkspaceId { get; set; }
 }
-
-public sealed record SecretKeyBundle(string Nonce, string EncKey) : ISkipWorkspaceFilter;
-
-public sealed record KeyPairBundle(string Nonce, string PublicKey, string EncPrivateKey) : ISkipWorkspaceFilter;

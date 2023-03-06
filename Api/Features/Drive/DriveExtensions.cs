@@ -38,5 +38,6 @@ public static class DriveExtensions
         driveRoutes.MapDeleteEndpoints();
         driveRoutes.MapMetadataEndpoints();
         driveRoutes.MapMultipartUploadEndpoints();
+        driveRoutes.MapMoveEndpoints();
     }
 }

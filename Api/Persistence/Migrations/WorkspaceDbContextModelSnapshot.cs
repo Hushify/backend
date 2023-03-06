@@ -19,7 +19,7 @@ namespace Hushify.Api.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.2")
+                .HasAnnotation("ProductVersion", "7.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -33,10 +33,6 @@ namespace Hushify.Api.Persistence.Migrations
                     b.Property<long>("EncryptedSize")
                         .HasColumnType("bigint");
 
-                    b.Property<SecretKeyBundle>("FileKeyBundle")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<FileS3Config>("FileS3Config")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -44,6 +40,10 @@ namespace Hushify.Api.Persistence.Migrations
                     b.Property<string>("FileStatus")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<SecretKeyBundle>("KeyBundle")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("MaterializedPath")
                         .IsRequired()
@@ -84,13 +84,13 @@ namespace Hushify.Api.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<SecretKeyBundle>("FolderKeyBundle")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("FolderStatus")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<SecretKeyBundle>("KeyBundle")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("MaterializedPath")
                         .IsRequired()
@@ -162,15 +162,15 @@ namespace Hushify.Api.Persistence.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<KeyPairBundle>("AsymmetricEncKeyBundle")
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<UserCryptoProperties>("CryptoProperties")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -184,9 +184,6 @@ namespace Hushify.Api.Persistence.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<SecretKeyBundle>("MasterKeyBundle")
-                        .HasColumnType("jsonb");
 
                     b.Property<DateTimeOffset?>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");
@@ -208,20 +205,8 @@ namespace Hushify.Api.Persistence.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<SecretKeyBundle>("RecoveryKeyBundle")
-                        .HasColumnType("jsonb");
-
-                    b.Property<SecretKeyBundle>("RecoveryMasterKeyBundle")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Salt")
-                        .HasColumnType("text");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
-
-                    b.Property<KeyPairBundle>("SigningKeyBundle")
-                        .HasColumnType("jsonb");
 
                     b.Property<string>("StripeCustomerId")
                         .HasColumnType("text");
