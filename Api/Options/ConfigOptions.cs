@@ -4,6 +4,7 @@ public sealed class ConfigOptions
 {
     public const string Config = nameof(Config);
 
+    public string TurnstileSecretKey { get; set; } = default!;
     public EmailOptions Email { get; set; } = default!;
     public RabbitOptions Rabbit { get; set; } = default!;
     public KeyPair RSAKeyPair { get; set; } = default!;

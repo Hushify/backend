@@ -1,5 +1,16 @@
 name: hushify-infrastructure
 services:
+  - name: db
+    image: postgres:15-alpine
+    bindings:
+      - port: 5432
+    env:
+      - name: POSTGRES_DB
+        value: example.db
+      - name: POSTGRES_USER
+        value: postgres
+      - name: POSTGRES_PASSWORD
+        value: mysecretpassword
   - name: rabbit
     image: rabbitmq:3-management-alpine
     bindings:

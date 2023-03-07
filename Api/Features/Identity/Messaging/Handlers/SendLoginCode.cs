@@ -1,20 +1,25 @@
 using Hushify.Api.Features.Identity.Entities;
 using Hushify.Api.Features.Identity.Messaging.Events;
+using Hushify.Api.Options;
 using Hushify.Api.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace Hushify.Api.Features.Identity.Messaging.Handlers;
 
 public sealed class SendLoginCode : IConsumer<InitiateLogin>
 {
     private readonly IEmailService _emailService;
+    private readonly EmailOptions _options;
     private readonly UserManager<AppUser> _userManager;
 
-    public SendLoginCode(IEmailService emailService, UserManager<AppUser> userManager)
+    public SendLoginCode(IEmailService emailService, IOptionsMonitor<ConfigOptions> options,
+        UserManager<AppUser> userManager)
     {
         _emailService = emailService;
         _userManager = userManager;
+        _options = options.CurrentValue.Email;
     }
 
     public async Task Consume(ConsumeContext<InitiateLogin> context)
@@ -33,6 +38,7 @@ public sealed class SendLoginCode : IConsumer<InitiateLogin>
             <h1>{loginConfirmationCode}</h1>
         </div>";
 
-        await _emailService.SendEmailAsync(user.Email!, "Login Code", body, true, context.CancellationToken);
+        await _emailService.SendEmailAsync(_options.From, user.Email!, "Login Code", body, true,
+            context.CancellationToken);
     }
 }

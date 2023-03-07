@@ -55,6 +55,7 @@ builder.Services
     });
 
 builder.Services.AddScoped<IEmailService, FluentEmailService>();
+builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 
 // Open Api
 builder.Services.AddEndpointsApiExplorer();
@@ -128,6 +129,8 @@ builder.Services.AddCors(options =>
         ).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
 });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
@@ -144,6 +147,7 @@ app.UseAuthorization();
 
 app.UseRateLimiter();
 
+app.MapHealthChecks("/health");
 app.MapIdentityEndpoints();
 app.MapDriveEndpoints();
 

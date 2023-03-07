@@ -39,7 +39,7 @@ public static class ForgotPassword
             <h1>{resetPasswordToken}</h1>
         </div>";
 
-        await emailService.SendEmailAsync(user.Email!, "Reset password code", body, true, ct);
+        await emailService.SendEmailAsync(options.Value.Email.From, user.Email!, "Reset password code", body, true, ct);
         return TypedResults.Ok();
     }
 }
