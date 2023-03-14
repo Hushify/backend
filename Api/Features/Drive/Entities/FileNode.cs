@@ -25,6 +25,8 @@ public sealed class FileNode : IWorkspaceFilter
     public SecretKeyBundle KeyBundle { get; set; } = default!;
     public MetadataBundle MetadataBundle { get; set; } = default!;
 
+    public bool IsShared { get; set; }
+
     public FileS3Config FileS3Config { get; set; } = default!;
     public long EncryptedSize { get; set; }
     public FileStatus FileStatus { get; set; } = FileStatus.UploadStarted;

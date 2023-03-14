@@ -16,11 +16,21 @@ public static class DriveExtensions
         {
             AWSConfigsS3.UseSignatureVersion4 = true;
             var credentials = new BasicAWSCredentials(awsOptions.AccessKey, awsOptions.SecretKey);
+
             var s3Config = new AmazonS3Config
             {
-                // ServiceURL = options.AWS.ServiceUrl,
-                RegionEndpoint = RegionEndpoint.GetBySystemName(awsOptions.Region)
+                ForcePathStyle = awsOptions.PathStyle
             };
+
+            if (string.IsNullOrWhiteSpace(awsOptions.Region))
+            {
+                s3Config.ServiceURL = awsOptions.ServiceUrl;
+            }
+            else
+            {
+                s3Config.RegionEndpoint = RegionEndpoint.GetBySystemName(awsOptions.Region);
+            }
+
             return new AmazonS3Client(credentials, s3Config);
         });
 
@@ -39,5 +49,6 @@ public static class DriveExtensions
         driveRoutes.MapMetadataEndpoints();
         driveRoutes.MapMultipartUploadEndpoints();
         driveRoutes.MapMoveEndpoints();
+        driveRoutes.MapShareEndpoints();
     }
 }

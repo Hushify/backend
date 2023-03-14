@@ -27,14 +27,16 @@ public static class List
         TypedResults.Ok(await driveService.ListAsync(folderId, ct));
 }
 
-public sealed record ListResponse(Guid WorkspaceFolderId, Guid CurrentFolderId, IEnumerable<BreadcrumbVM> Breadcrumbs,
-    IEnumerable<FileNodeVM> Files, IEnumerable<FolderNodeVM> Folders);
+public sealed record ListResponse(
+    Guid WorkspaceFolderId, Guid CurrentFolderId,
+    IEnumerable<BreadcrumbVM> Breadcrumbs, IEnumerable<FileNodeVM> Files, IEnumerable<FolderNodeVM> Folders
+);
 
-public sealed record BreadcrumbVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle);
+public sealed record BreadcrumbVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle, bool IsShared);
 
-public sealed record FileNodeVM(Guid Id, MetadataBundle? MetadataBundle, long EncryptedSize, SecretKeyBundle KeyBundle,
-    string Url);
+public sealed record FileNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle, string Url,
+    bool IsShared);
 
-public sealed record FolderNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle);
+public sealed record FolderNodeVM(Guid Id, MetadataBundle? MetadataBundle, SecretKeyBundle KeyBundle, bool IsShared);
 
 public sealed record StorageStatsResponse(long Total, long Used);

@@ -23,6 +23,8 @@ public sealed class FolderNode : IWorkspaceFilter
     public SecretKeyBundle KeyBundle { get; set; } = default!;
     public MetadataBundle? MetadataBundle { get; set; }
 
+    public bool IsShared { get; set; }
+
     public FolderStatus FolderStatus { get; set; } = FolderStatus.Normal;
     public Workspace Workspace { get; set; } = default!;
 

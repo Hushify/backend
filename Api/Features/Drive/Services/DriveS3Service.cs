@@ -63,12 +63,15 @@ public sealed class DriveS3Service : IDriveService
 
         var files = currentFolder.Files
             .Where(f => f.FileStatus == FileStatus.UploadFinished)
-            .Select(f => new FileNodeVM(f.Id, f.MetadataBundle, f.EncryptedSize, f.KeyBundle,
-                GetCFUrl(f.FileS3Config.Key, DateTime.UtcNow.AddHours(24))));
+            .Select(f => new FileNodeVM(f.Id, f.MetadataBundle, f.KeyBundle,
+                _awsOptions.IsCloudFrontEnabled
+                    ? GenerateCloudFrontUrl(f.FileS3Config.Key, DateTime.UtcNow.AddHours(24))
+                    : GenerateGetObjectUrl(f.FileS3Config.Key, f.FileS3Config.BucketName,
+                        DateTime.UtcNow.AddHours(24)), f.IsShared));
 
         var folders = currentFolder.Folders
             .Where(f => f.FolderStatus == FolderStatus.Normal)
-            .Select(f => new FolderNodeVM(f.Id, f.MetadataBundle, f.KeyBundle));
+            .Select(f => new FolderNodeVM(f.Id, f.MetadataBundle, f.KeyBundle, f.IsShared));
 
         if (currentFolder.ParentFolderId is null)
         {
@@ -78,7 +81,7 @@ public sealed class DriveS3Service : IDriveService
         var current = currentFolder;
         while (current is not null)
         {
-            breadcrumbs.Add(new BreadcrumbVM(current.Id, current.MetadataBundle, current.KeyBundle));
+            breadcrumbs.Add(new BreadcrumbVM(current.Id, current.MetadataBundle, current.KeyBundle, current.IsShared));
             current = await _context.Folders
                 .Include(sf => sf.ParentFolder)
                 .FirstOrDefaultAsync(sf => sf.Id == current.ParentFolderId
@@ -170,16 +173,6 @@ public sealed class DriveS3Service : IDriveService
         return new CreateMultipartUploadResponse(file.Id, file.FileS3Config.UploadId, parts);
     }
 
-    private string GeneratePutObjectUrl(string key, string bucketName, DateTime expiry) =>
-        _s3Client.GetPreSignedURL(new GetPreSignedUrlRequest
-        {
-            BucketName = bucketName,
-            Key = key,
-            Expires = expiry,
-            Protocol = Protocol.HTTPS,
-            Verb = HttpVerb.PUT
-        });
-
     private string GenerateMultipartPutObjectUrl(string key, string bucketName, string uploadId, int partNumber,
         DateTime expiry) =>
         _s3Client.GetPreSignedURL(new GetPreSignedUrlRequest
@@ -203,9 +196,11 @@ public sealed class DriveS3Service : IDriveService
             Verb = HttpVerb.GET
         });
 
-    private string GetCFUrl(string resource, DateTime expiry) =>
-        AmazonCloudFrontUrlSigner.GetCannedSignedURL(AmazonCloudFrontUrlSigner.Protocol.https,
-            _awsOptions.ServiceUrl, new StringReader(_cryptoKeys.PrivateSecurityKey.Rsa.ExportRSAPrivateKeyPem()),
+    private string GenerateCloudFrontUrl(string resource, DateTime expiry) =>
+        AmazonCloudFrontUrlSigner.GetCannedSignedURL(
+            AmazonCloudFrontUrlSigner.Protocol.https,
+            _awsOptions.CloudFrontServiceUrl,
+            new StringReader(_cryptoKeys.PrivateSecurityKey.Rsa.ExportRSAPrivateKeyPem()),
             resource, _awsOptions.KeyId, expiry);
 
     private string GetKey(Guid fileId) => $"workspace-{_workspaceProvider.GetWorkspaceId()}/{fileId}";

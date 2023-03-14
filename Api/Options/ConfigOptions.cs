@@ -46,5 +46,5 @@ public sealed class StripeOptions
     public string SecretKey { get; set; } = default!;
 }
 
-public sealed record AWSOptions(string KeyId, string ServiceUrl, string BucketName, string AccessKey, string SecretKey,
-    string Region);
+public sealed record AWSOptions(string? KeyId, string? ServiceUrl, string BucketName, string AccessKey,
+    string SecretKey, string? Region, string? CloudFrontServiceUrl, bool IsCloudFrontEnabled, bool PathStyle);
