@@ -4,13 +4,13 @@ using Hushify.Api.Constants;
 using Hushify.Api.Exceptions;
 using Hushify.Api.Extensions;
 using Hushify.Api.Features.Drive;
+using Hushify.Api.Features.Drive.Messaging.Handlers;
 using Hushify.Api.Features.Identity;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
 using Hushify.Api.Resolvers;
 using Hushify.Api.Services;
 using MassTransit;
-using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -64,23 +64,56 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<SwaggerGeneratorOptions>(opts => opts.InferSecuritySchemes = true);
 
-// Add MassTransit
+// Add MassTransit w/ Rabbit
 builder.Services.AddMassTransit(config =>
 {
     config.AddConsumersFromNamespaceContaining<IApiMarker>();
+
     config.UsingRabbitMq((ctx, cfg) =>
     {
-        var redisOptions = ctx.GetRequiredService<IOptionsMonitor<ConfigOptions>>().CurrentValue.Rabbit;
-        cfg.Host(redisOptions.Host, redisOptions.VirtualHost, h =>
+        var rabbitOptions = configOptions.Rabbit;
+        cfg.Host(rabbitOptions.Host, rabbitOptions.VirtualHost, h =>
         {
-            h.Username(redisOptions.Username);
-            h.Password(redisOptions.Password);
+            h.Username(rabbitOptions.Username);
+            h.Password(rabbitOptions.Password);
         });
 
         cfg.UseMessageRetry(r => r.Immediate(100));
         cfg.ConfigureEndpoints(ctx);
     });
 });
+
+// Add MassTransit w/ SQS
+if (configOptions.AWS.QueueName is not null && configOptions.AWS.QueueRegion is not null)
+{
+    builder.Services.AddMassTransit<ISQSBus>(config =>
+    {
+        config.AddConsumer<MultipartS3Event>();
+
+        config.UsingAmazonSqs((ctx, cfg) =>
+        {
+            var awsOptions = configOptions.AWS;
+            cfg.Host(awsOptions.QueueRegion, h =>
+            {
+                h.AccessKey(awsOptions.QueueAccessKey);
+                h.SecretKey(awsOptions.QueueSecretKey);
+            });
+
+            cfg.ReceiveEndpoint(awsOptions.QueueName,
+                e =>
+                {
+                    e.ConfigureConsumeTopology = false;
+                    e.PublishFaults = false;
+                    e.Durable = true;
+                    e.AutoStart = true;
+
+                    e.ClearSerialization();
+                    e.UseRawJsonSerializer();
+                    e.ConfigureConsumer<MultipartS3Event>(ctx);
+                });
+        });
+    });
+}
 
 builder.Services.AddFeatureManagement();
 builder.Services.AddRateLimiter(options =>
@@ -158,3 +191,5 @@ namespace Hushify.Api
 {
     public class Program { }
 }
+
+public interface ISQSBus : IBus { }

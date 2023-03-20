@@ -47,4 +47,5 @@ public sealed class StripeOptions
 }
 
 public sealed record AWSOptions(string? KeyId, string? ServiceUrl, string BucketName, string AccessKey,
-    string SecretKey, string? Region, string? CloudFrontServiceUrl, bool IsCloudFrontEnabled, bool PathStyle);
+    string SecretKey, string? Region, string? CloudFrontServiceUrl, bool IsCloudFrontEnabled, bool PathStyle,
+    string? QueueName, string? QueueRegion, string? QueueAccessKey, string? QueueSecretKey);

@@ -17,7 +17,7 @@ public sealed class WorkspaceProvider : IWorkspaceProvider
     public Guid GetWorkspaceId()
     {
         var workspaceClaim =
-            _httpContextAccessor?.HttpContext?.User.Claims.FirstOrDefault(c => c.Type == AppClaimTypes.Workspace);
+            _httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(c => c.Type == AppClaimTypes.Workspace);
 
         if (workspaceClaim is null)
         {
