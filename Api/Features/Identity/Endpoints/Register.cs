@@ -9,7 +9,6 @@ using Hushify.Api.Features.Identity.Services;
 using Hushify.Api.Filters;
 using Hushify.Api.Options;
 using Hushify.Api.Persistence;
-using Hushify.Api.Services;
 using MassTransit;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -63,18 +62,10 @@ public static class Register
     }
 
     private static async Task<Results<Ok, ValidationProblem>> RegisterConfirmHandler(ConfirmRequest req,
-        IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager, ICaptchaService captchaService,
+        IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager,
         IBus bus, IOptions<ConfigOptions> options, ITokenGenerator tokenGenerator,
         WorkspaceDbContext workspaceDbContext, CancellationToken ct)
     {
-        if (!await captchaService.ValidateCaptchaAsync(req.Captcha, ct))
-        {
-            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-            {
-                { "errors", new[] { "Captcha is invalid." } }
-            });
-        }
-
         var invalidEmailOrCode = TypedResults.ValidationProblem(new Dictionary<string, string[]>
             { { "errors", new[] { "Wrong email or code." } } });
 
@@ -129,7 +120,7 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
     }
 }
 
-public sealed record ConfirmRequest(string Email, string Code, string Captcha, UserCryptoProperties CryptoProperties);
+public sealed record ConfirmRequest(string Email, string Code, UserCryptoProperties CryptoProperties);
 
 public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
 {
@@ -138,7 +129,6 @@ public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
         RuleFor(c => c).NotNull();
         RuleFor(c => c.Email).NotEmpty().EmailAddress();
         RuleFor(c => c.Code).NotEmpty();
-        RuleFor(x => x.Captcha).NotEmpty();
         RuleFor(x => x.CryptoProperties.Salt).NotEmpty();
         RuleFor(x => x.CryptoProperties.MasterKeyBundle).NotNull().WithName("Master Key Bundle");
         RuleFor(x => x.CryptoProperties.RecoveryMasterKeyBundle).NotNull().WithName("Recovery Master Key Bundle");

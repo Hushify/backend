@@ -55,7 +55,6 @@ builder.Services
     });
 
 builder.Services.AddScoped<IEmailService, FluentEmailService>();
-builder.Services.AddScoped<ICaptchaService, CaptchaService>();
 
 // Open Api
 builder.Services.AddEndpointsApiExplorer();
