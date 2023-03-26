@@ -83,7 +83,8 @@ builder.Services.AddMassTransit(config =>
 });
 
 // Add MassTransit w/ SQS
-if (configOptions.AWS.QueueName is not null && configOptions.AWS.QueueRegion is not null)
+if (!string.IsNullOrWhiteSpace(configOptions.AWS.QueueName) &&
+    !string.IsNullOrWhiteSpace(configOptions.AWS.QueueRegion))
 {
     builder.Services.AddMassTransit<ISQSBus>(config =>
     {

@@ -21,17 +21,26 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, Guid>, IDataProt
     {
         base.OnModelCreating(builder);
 
+        builder.Entity<AppUser>().HasIndex(x => x.WorkspaceId);
         builder.Entity<AppUser>().Property(x => x.CryptoProperties).HasColumnType("jsonb");
 
         builder.Entity<AppRole>().HasIndex(x => x.NormalizedName).IsUnique(false);
+        builder.Entity<AppRole>().HasIndex(x => x.WorkspaceId);
         builder.Entity<AppRole>().HasIndex(x => new { x.NormalizedName, x.WorkspaceId }).IsUnique();
 
         builder.Entity<FileNode>().Property(x => x.KeyBundle).HasColumnType("jsonb");
-        builder.Entity<FolderNode>().Property(x => x.KeyBundle).HasColumnType("jsonb");
-
         builder.Entity<FileNode>().Property(x => x.MetadataBundle).HasColumnType("jsonb");
-        builder.Entity<FolderNode>().Property(x => x.MetadataBundle).HasColumnType("jsonb");
-
         builder.Entity<FileNode>().Property(x => x.FileS3Config).HasColumnType("jsonb");
+        builder.Entity<FileNode>().HasIndex(x => x.MaterializedPath);
+        builder.Entity<FileNode>().HasIndex(x => new { x.Id, x.WorkspaceId }).IsUnique();
+        builder.Entity<FileNode>().HasIndex(x => x.WorkspaceId);
+        builder.Entity<FileNode>().Property(x => x.FileStatus).HasConversion<string>();
+
+        builder.Entity<FolderNode>().Property(x => x.KeyBundle).HasColumnType("jsonb");
+        builder.Entity<FolderNode>().Property(x => x.MetadataBundle).HasColumnType("jsonb");
+        builder.Entity<FolderNode>().HasIndex(x => x.MaterializedPath);
+        builder.Entity<FolderNode>().HasIndex(x => new { x.Id, x.WorkspaceId }).IsUnique();
+        builder.Entity<FolderNode>().HasIndex(x => x.WorkspaceId);
+        builder.Entity<FolderNode>().Property(x => x.FolderStatus).HasConversion<string>();
     }
 }

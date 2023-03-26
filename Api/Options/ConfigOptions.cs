@@ -21,9 +21,10 @@ public sealed record AppUrl(string Scheme, string Domain)
     public override string ToString() => $"{Scheme}://{Domain}";
 }
 
-public sealed record RabbitOptions(string Host, string VirtualHost, string Username, string Password);
+public sealed record RabbitOptions(string Host, string VirtualHost, string Username,
+    string Password);
 
-public sealed record JwtOptions(string Authority, string ValidAudience, string ValidIssuer, int TokenValidityInMins);
+public sealed record JwtOptions(string ValidAudience, string ValidIssuer, int TokenValidityInMins);
 
 public sealed record KeyPair(string PrivateKey, string PublicKey);
 
@@ -45,6 +46,7 @@ public sealed class StripeOptions
     public string SecretKey { get; set; } = default!;
 }
 
-public sealed record AWSOptions(string? KeyId, string? ServiceUrl, string BucketName, string AccessKey,
-    string SecretKey, string? Region, string? CloudFrontServiceUrl, bool IsCloudFrontEnabled, bool PathStyle,
-    string? QueueName, string? QueueRegion, string? QueueAccessKey, string? QueueSecretKey);
+public sealed record AWSOptions(string? KeyId, string? ServiceUrl, string BucketName,
+    string AccessKey, string SecretKey, string? Region, string? CloudFrontServiceUrl,
+    bool IsCloudFrontEnabled, bool PathStyle, string? QueueName, string? QueueRegion,
+    string? QueueAccessKey, string? QueueSecretKey);

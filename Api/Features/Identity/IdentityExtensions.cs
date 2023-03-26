@@ -42,7 +42,6 @@ public static class IdentityExtensions
         var emailTokenProviderType = typeof(EmailTokenProvider<>).MakeGenericType(userType);
         identityBuilder.AddTokenProvider(TokenOptions.DefaultEmailProvider, emailTokenProviderType);
 
-        // IdentityModelEventSource.ShowPII = builder.Environment.IsDevelopment();
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
         builder.Services.AddAuthentication(options =>
@@ -55,9 +54,7 @@ public static class IdentityExtensions
             {
                 var sp = builder.Services.BuildServiceProvider();
 
-                // options.MapInboundClaims = false;
                 options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-                // options.Authority = opts.Jwt.Authority;
                 options.SaveToken = true;
 
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -75,28 +72,25 @@ public static class IdentityExtensions
 
                 options.Events = new JwtBearerEvents
                 {
-                    OnAuthenticationFailed = ctx => Task.CompletedTask,
-                    OnForbidden = ctx => Task.CompletedTask,
-                    OnChallenge = ctx => Task.CompletedTask
+                    OnAuthenticationFailed = _ => Task.CompletedTask,
+                    OnForbidden = _ => Task.CompletedTask,
+                    OnChallenge = _ => Task.CompletedTask
                 };
-
-                // options.Configuration = new OpenIdConnectConfiguration
-                // {
-                //     SigningKeys = { sp.GetRequiredService<CryptoKeys>().PublicSecurityKey }
-                // };
             });
 
         builder.Services.AddAuthorization();
     }
 
-    public static void AddStripeServices(this WebApplicationBuilder builder, StripeOptions stripeOptions)
+    public static void AddStripeServices(this WebApplicationBuilder builder,
+        StripeOptions stripeOptions)
     {
         builder.Services.AddHttpClient("Stripe");
         builder.Services.AddTransient<IStripeClient, StripeClient>(serviceProvider =>
         {
             var clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
             var httpClient = new SystemNetHttpClient(clientFactory.CreateClient("Stripe"),
-                StripeConfiguration.MaxNetworkRetries, enableTelemetry: StripeConfiguration.EnableTelemetry);
+                StripeConfiguration.MaxNetworkRetries,
+                enableTelemetry: StripeConfiguration.EnableTelemetry);
 
             return new StripeClient(stripeOptions.SecretKey, httpClient: httpClient);
         });
@@ -145,7 +139,8 @@ public static class IdentityExtensions
                 return false;
             }
 
-            var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+            var dataProtectionProvider =
+                ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
             var protector = dataProtectionProvider.CreateProtector(RefreshToken);
 
             token = protector.Unprotect(token);
@@ -158,16 +153,19 @@ public static class IdentityExtensions
         }
     }
 
-    public static void SetRefreshTokenCookie(this HttpContext ctx, string refreshToken, int ttlInDays, string domain)
+    public static void SetRefreshTokenCookie(this HttpContext ctx, string refreshToken,
+        int ttlInDays, string domain)
     {
-        var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+        var dataProtectionProvider =
+            ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
         var protector = dataProtectionProvider.CreateProtector(RefreshToken);
 
         var cookieOptions = GetCookieOptions(DateTimeOffset.UtcNow.AddDays(ttlInDays), domain);
         ctx.Response.Cookies.Append(RefreshToken, protector.Protect(refreshToken), cookieOptions);
     }
 
-    public static bool DeleteRefreshTokenCookie(this HttpContext ctx, string domain, out string? token)
+    public static bool DeleteRefreshTokenCookie(this HttpContext ctx, string domain,
+        out string? token)
     {
         try
         {
@@ -176,7 +174,8 @@ public static class IdentityExtensions
                 return false;
             }
 
-            var dataProtectionProvider = ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
+            var dataProtectionProvider =
+                ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
             var protector = dataProtectionProvider.CreateProtector(RefreshToken);
 
             token = protector.Unprotect(token);
@@ -189,7 +188,8 @@ public static class IdentityExtensions
         }
         finally
         {
-            ctx.Response.Cookies.Delete(RefreshToken, GetCookieOptions(DateTimeOffset.MinValue, domain));
+            ctx.Response.Cookies.Delete(RefreshToken,
+                GetCookieOptions(DateTimeOffset.MinValue, domain));
         }
     }
 

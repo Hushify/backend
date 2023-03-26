@@ -21,7 +21,9 @@ public sealed class MultipartS3Event : IConsumer<S3EventMessage>
                 continue;
             }
 
-            var file = await _ctx.Files.FirstOrDefaultAsync(f => f.Id == fileId, context.CancellationToken);
+            var file =
+                await _ctx.Files.FirstOrDefaultAsync(f => f.Id == fileId,
+                    context.CancellationToken);
             if (file is null)
             {
                 continue;
