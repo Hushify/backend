@@ -86,7 +86,7 @@ builder.Services.AddMassTransit(config =>
 if (!string.IsNullOrWhiteSpace(configOptions.AWS.QueueName) &&
     !string.IsNullOrWhiteSpace(configOptions.AWS.QueueRegion))
 {
-    builder.Services.AddMassTransit<ISQSBus>(config =>
+    builder.Services.AddMassTransit<ISqsBus>(config =>
     {
         config.AddConsumer<MultipartS3Event>();
 
@@ -186,10 +186,11 @@ app.MapDriveEndpoints();
 
 app.Run();
 
-// This is to enable testing
 namespace Hushify.Api
 {
     public class Program { }
-}
 
-public interface ISQSBus : IBus { }
+    public interface IApiMarker { }
+
+    public interface ISqsBus : IBus { }
+}

@@ -12,8 +12,9 @@ public sealed class WorkspaceDbContext : AppDbContext
 {
     private readonly IWorkspaceProvider _workspaceProvider;
 
-    public WorkspaceDbContext(DbContextOptions options, IWorkspaceProvider workspaceProvider) :
-        base(options) => _workspaceProvider = workspaceProvider;
+    public WorkspaceDbContext(DbContextOptions options, IWorkspaceProvider workspaceProvider,
+        ILogger<WorkspaceDbContext> logger) :
+        base(options, logger) => _workspaceProvider = workspaceProvider;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
