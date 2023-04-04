@@ -8,5 +8,5 @@ public static class HttpContextExtensions
             : ctx.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
 
     public static string GetUserAgent(this HttpContext ctx) =>
-        ctx.Request.Headers?.UserAgent.ToString() ?? string.Empty;
+        ctx.Request.Headers.UserAgent.ToString();
 }
