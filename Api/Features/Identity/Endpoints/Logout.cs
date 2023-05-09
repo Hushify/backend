@@ -17,23 +17,24 @@ public static class Logout
         return routes;
     }
 
-    private static async Task<Ok> LogoutHandler(IHttpContextAccessor ctxAccessor, IOptions<ConfigOptions> options,
+    private static async Task<Ok> LogoutHandler(IHttpContextAccessor ctxAccessor,
+        IOptions<ConfigOptions> options,
         AppDbContext appDbContext, CancellationToken ct)
     {
         var ctx = ctxAccessor.HttpContext ?? throw new AppException("HttpContext was null.");
-        if (!ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out var token))
+        if (!ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out var tokenHash))
         {
             return TypedResults.Ok();
         }
 
         var user = await appDbContext.Users.Include(x => x.RefreshTokens)
-            .Where(x => x.RefreshTokens.Any(t => t.Token == token)).FirstOrDefaultAsync(ct);
+            .Where(x => x.RefreshTokens.Any(t => t.TokenHash == tokenHash)).FirstOrDefaultAsync(ct);
         if (user is null)
         {
             return TypedResults.Ok();
         }
 
-        var refreshToken = user.RefreshTokens.FirstOrDefault(x => x.Token == token);
+        var refreshToken = user.RefreshTokens.FirstOrDefault(x => x.TokenHash == tokenHash);
         if (refreshToken is null)
         {
             return TypedResults.Ok();

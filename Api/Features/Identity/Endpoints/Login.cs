@@ -19,7 +19,8 @@ public static class Login
     {
         routes.WithParameterValidation(typeof(InitiateLoginRequest), typeof(ConfirmLoginRequest));
 
-        routes.MapPost("/login", InitiateLoginHandler).RequireRateLimiting(AppConstants.EmailCodeLimit);
+        routes.MapPost("/login", InitiateLoginHandler)
+            .RequireRateLimiting(AppConstants.EmailCodeLimit);
         routes.MapPost("/login-confirm", ConfirmLoginHandler);
         return routes;
     }
@@ -47,10 +48,12 @@ public static class Login
         return TypedResults.Ok();
     }
 
-    private static async Task<Results<Ok<ConfirmLoginResponse>, ValidationProblem>> ConfirmLoginHandler(
-        ConfirmLoginRequest req, ITokenGenerator tokenGenerator,
-        IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager, IOptions<ConfigOptions> options,
-        IBus bus, CancellationToken ct)
+    private static async Task<Results<Ok<ConfirmLoginResponse>, ValidationProblem>>
+        ConfirmLoginHandler(
+            ConfirmLoginRequest req, ITokenGenerator tokenGenerator,
+            IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager,
+            IOptions<ConfigOptions> options,
+            IBus bus, CancellationToken ct)
     {
         var invalidEmailOrCode = TypedResults.ValidationProblem(new Dictionary<string, string[]>
             { { "errors", new[] { "Wrong email or code." } } });
@@ -62,7 +65,8 @@ public static class Login
         }
 
         var isCodeValid =
-            await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, req.Code);
+            await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider,
+                req.Code);
         if (!isCodeValid)
         {
             return invalidEmailOrCode;
@@ -75,16 +79,17 @@ public static class Login
         var (accessTokenNonce, encryptedAccessToken, serverPublicKey) =
             tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(),
                 user.CryptoProperties.AsymmetricKeyBundle.PublicKey);
-        var refreshToken = tokenGenerator.GenerateRefreshToken(userAgent);
+        var (refreshToken, token) = tokenGenerator.GenerateRefreshToken(userAgent);
 
         user.RefreshTokens.Add(refreshToken);
         await userManager.UpdateAsync(user);
 
-        ctx.SetRefreshTokenCookie(refreshToken.Token, options.Value.RefreshToken.TimeToLiveInDays,
+        ctx.SetRefreshTokenCookie(token, options.Value.RefreshToken.TimeToLiveInDays,
             options.Value.ApiUrl.Domain);
 
         return TypedResults.Ok(
-            new ConfirmLoginResponse(encryptedAccessToken, accessTokenNonce, serverPublicKey, user.CryptoProperties)
+            new ConfirmLoginResponse(encryptedAccessToken, accessTokenNonce, serverPublicKey,
+                user.CryptoProperties)
         );
     }
 }
@@ -97,7 +102,8 @@ public sealed class InitiateLoginRequestValidator : AbstractValidator<InitiateLo
     {
         RuleFor(c => c.Email)
             .NotEmpty().WithMessage("Email address can not be empty.")
-            .EmailAddress().WithMessage((request, _) => $"{request.Email} is not a valid email address.");
+            .EmailAddress()
+            .WithMessage((request, _) => $"{request.Email} is not a valid email address.");
     }
 }
 
@@ -115,5 +121,6 @@ public sealed class ConfirmLoginRequestValidator : AbstractValidator<ConfirmLogi
     }
 }
 
-public sealed record ConfirmLoginResponse(string EncryptedAccessToken, string AccessTokenNonce, string ServerPublicKey,
+public sealed record ConfirmLoginResponse(string EncryptedAccessToken, string AccessTokenNonce,
+    string ServerPublicKey,
     UserCryptoProperties CryptoProperties);

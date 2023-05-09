@@ -28,14 +28,14 @@ public static class Refresh
             IOptions<ConfigOptions> options, AppDbContext appDbContext, CancellationToken ct)
     {
         var ctx = ctxAccessor.HttpContext;
-        if (ctx is null || !ctx.GetRefreshTokenCookie(out var token) ||
-            string.IsNullOrWhiteSpace(token))
+        if (ctx is null || !ctx.GetRefreshTokenHashFromCookie(out var tokenHash) ||
+            string.IsNullOrWhiteSpace(tokenHash))
         {
             return TypedResults.Unauthorized();
         }
 
         var user = await appDbContext.Users.Include(x => x.RefreshTokens)
-            .Where(x => x.RefreshTokens.Any(t => t.Token == token)).FirstOrDefaultAsync(ct);
+            .Where(x => x.RefreshTokens.Any(t => t.TokenHash == tokenHash)).FirstOrDefaultAsync(ct);
 
         if (user is null)
         {
@@ -45,25 +45,26 @@ public static class Refresh
 
         var userAgent = ctx.GetUserAgent();
 
-        var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+        var refreshToken = user.RefreshTokens.Single(x => x.TokenHash == tokenHash);
         if (refreshToken.IsRevoked)
         {
             RefreshToken.RevokeDescendantRefreshTokens(refreshToken, user, userAgent,
-                $"Attempted reuse of revoked ancestor token: {token}");
+                $"Attempted reuse of revoked ancestor token: {tokenHash}");
             appDbContext.Entry(user).State = EntityState.Modified;
             await userManager.UpdateAsync(user);
         }
 
         if (!refreshToken.IsActive)
         {
-            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out var _);
+            ctx.DeleteRefreshTokenCookie(options.Value.ApiUrl.Domain, out _);
             throw new AppException("Invalid token.", new[] { "Invalid token." });
         }
 
-        var newToken = refreshToken.Token;
+        var newToken = string.Empty;
+        var newTokenHash = refreshToken.TokenHash;
         if (refreshToken.Expires.Subtract(DateTimeOffset.UtcNow).Days < 3)
         {
-            var newRefreshToken =
+            var (newRefreshToken, refToken) =
                 RefreshToken.RotateRefreshToken(refreshToken, tokenGenerator, userAgent);
             user.RefreshTokens.Add(newRefreshToken);
             RefreshToken.RemoveOldRefreshTokens(user, options.Value.RefreshToken.TimeToLiveInDays);
@@ -71,7 +72,8 @@ public static class Refresh
             appDbContext.Entry(user).State = EntityState.Modified;
             await userManager.UpdateAsync(user);
 
-            newToken = newRefreshToken.Token;
+            newToken = refToken;
+            newTokenHash = newRefreshToken.TokenHash;
         }
 
         if (user.CryptoProperties is null)
@@ -83,8 +85,7 @@ public static class Refresh
             tokenGenerator.GenerateAccessToken(user.GetAccessTokenClaims(),
                 user.CryptoProperties.AsymmetricKeyBundle.PublicKey);
 
-        var updateRefreshToken = !Equals(newToken, token);
-        if (updateRefreshToken)
+        if (!string.Equals(newTokenHash, tokenHash))
         {
             ctx.SetRefreshTokenCookie(newToken, options.Value.RefreshToken.TimeToLiveInDays,
                 options.Value.ApiUrl.Domain);

@@ -22,7 +22,8 @@ public static class Register
     {
         routes.WithParameterValidation(typeof(RegisterRequest), typeof(ConfirmRequest));
 
-        routes.MapPost("/register", RegisterHandler).RequireRateLimiting(AppConstants.EmailCodeLimit);
+        routes.MapPost("/register", RegisterHandler)
+            .RequireRateLimiting(AppConstants.EmailCodeLimit);
         routes.MapPost("/register-confirm", RegisterConfirmHandler);
 
         return routes;
@@ -61,7 +62,8 @@ public static class Register
         return TypedResults.Ok();
     }
 
-    private static async Task<Results<Ok, ValidationProblem>> RegisterConfirmHandler(ConfirmRequest req,
+    private static async Task<Results<Ok, ValidationProblem>> RegisterConfirmHandler(
+        ConfirmRequest req,
         IHttpContextAccessor ctxAccessor, UserManager<AppUser> userManager,
         IBus bus, IOptions<ConfigOptions> options, ITokenGenerator tokenGenerator,
         WorkspaceDbContext workspaceDbContext, CancellationToken ct)
@@ -75,7 +77,9 @@ public static class Register
             return invalidEmailOrCode;
         }
 
-        var result = await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider, req.Code);
+        var result =
+            await userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider,
+                req.Code);
         if (!result)
         {
             return invalidEmailOrCode;
@@ -88,7 +92,7 @@ public static class Register
 
         var userAgent = ctx.GetUserAgent();
 
-        var refreshToken = tokenGenerator.GenerateRefreshToken(userAgent);
+        var (refreshToken, token) = tokenGenerator.GenerateRefreshToken(userAgent);
         user.RefreshTokens.Add(refreshToken);
 
         await userManager.UpdateAsync(user);
@@ -100,7 +104,7 @@ public static class Register
             ct);
         await workspaceDbContext.SaveChangesAsync(ct);
 
-        ctx.SetRefreshTokenCookie(refreshToken.Token, options.Value.RefreshToken.TimeToLiveInDays,
+        ctx.SetRefreshTokenCookie(token, options.Value.RefreshToken.TimeToLiveInDays,
             options.Value.ApiUrl.Domain);
 
         await bus.Publish(new EmailConfirmed(user.Id), ct);
@@ -116,11 +120,13 @@ public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest
     {
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email address can not be empty.")
-            .EmailAddress().WithMessage((request, _) => $"{request.Email} is not a valid email address.");
+            .EmailAddress()
+            .WithMessage((request, _) => $"{request.Email} is not a valid email address.");
     }
 }
 
-public sealed record ConfirmRequest(string Email, string Code, UserCryptoProperties CryptoProperties);
+public sealed record ConfirmRequest(string Email, string Code,
+    UserCryptoProperties CryptoProperties);
 
 public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
 {
@@ -131,9 +137,12 @@ public sealed class ConfirmRequestValidator : AbstractValidator<ConfirmRequest>
         RuleFor(c => c.Code).NotEmpty();
         RuleFor(x => x.CryptoProperties.Salt).NotEmpty();
         RuleFor(x => x.CryptoProperties.MasterKeyBundle).NotNull().WithName("Master Key Bundle");
-        RuleFor(x => x.CryptoProperties.RecoveryMasterKeyBundle).NotNull().WithName("Recovery Master Key Bundle");
-        RuleFor(x => x.CryptoProperties.RecoveryKeyBundle).NotNull().WithName("Recovery Key Bundle");
-        RuleFor(x => x.CryptoProperties.AsymmetricKeyBundle).NotNull().WithName("Asymmetric Key Bundle");
+        RuleFor(x => x.CryptoProperties.RecoveryMasterKeyBundle).NotNull()
+            .WithName("Recovery Master Key Bundle");
+        RuleFor(x => x.CryptoProperties.RecoveryKeyBundle).NotNull()
+            .WithName("Recovery Key Bundle");
+        RuleFor(x => x.CryptoProperties.AsymmetricKeyBundle).NotNull()
+            .WithName("Asymmetric Key Bundle");
         RuleFor(x => x.CryptoProperties.SigningKeyBundle).NotNull().WithName("Signing Key Bundle");
     }
 }

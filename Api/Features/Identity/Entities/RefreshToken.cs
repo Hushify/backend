@@ -7,7 +7,7 @@ public sealed class RefreshToken : ISkipWorkspaceFilter
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
-    public string Token { get; set; } = default!;
+    public string TokenHash { get; set; } = default!;
 
     public DateTimeOffset Created { get; set; } = DateTimeOffset.UtcNow;
     public string? CreatedByUserAgent { get; set; }
@@ -34,7 +34,9 @@ public sealed class RefreshToken : ISkipWorkspaceFilter
             return;
         }
 
-        var childToken = user.RefreshTokens.SingleOrDefault(x => x.Token == refreshToken.ReplacedByToken.Token);
+        var childToken =
+            user.RefreshTokens.SingleOrDefault(x =>
+                x.TokenHash == refreshToken.ReplacedByToken.TokenHash);
         if (childToken!.IsActive)
         {
             RevokeRefreshToken(childToken, userAgent, reason);
@@ -45,12 +47,14 @@ public sealed class RefreshToken : ISkipWorkspaceFilter
         }
     }
 
-    public static RefreshToken RotateRefreshToken(RefreshToken refreshToken, ITokenGenerator tokenGenerator,
+    public static (RefreshToken newRefreshToken, string token) RotateRefreshToken(
+        RefreshToken refreshToken,
+        ITokenGenerator tokenGenerator,
         string userAgent)
     {
-        var newRefreshToken = tokenGenerator.GenerateRefreshToken(userAgent);
+        var (newRefreshToken, token) = tokenGenerator.GenerateRefreshToken(userAgent);
         RevokeRefreshToken(refreshToken, userAgent, "Replaced by new token", newRefreshToken.Id);
-        return newRefreshToken;
+        return (newRefreshToken, token);
     }
 
     public static void RemoveOldRefreshTokens(AppUser user, int ttlInDays) =>

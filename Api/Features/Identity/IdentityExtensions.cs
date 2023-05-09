@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Sodium;
 using Stripe;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -130,7 +131,7 @@ public static class IdentityExtensions
         Domain = domain
     };
 
-    public static bool GetRefreshTokenCookie(this HttpContext ctx, out string? token)
+    public static bool GetRefreshTokenHashFromCookie(this HttpContext ctx, out string? token)
     {
         try
         {
@@ -143,7 +144,7 @@ public static class IdentityExtensions
                 ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
             var protector = dataProtectionProvider.CreateProtector(RefreshToken);
 
-            token = protector.Unprotect(token);
+            token = Convert.ToBase64String(CryptoHash.Hash(protector.Unprotect(token)));
             return true;
         }
         catch (CryptographicException)
@@ -178,7 +179,7 @@ public static class IdentityExtensions
                 ctx.RequestServices.GetRequiredService<IDataProtectionProvider>();
             var protector = dataProtectionProvider.CreateProtector(RefreshToken);
 
-            token = protector.Unprotect(token);
+            token = Convert.ToBase64String(CryptoHash.Hash(protector.Unprotect(token)));
             return true;
         }
         catch (CryptographicException)

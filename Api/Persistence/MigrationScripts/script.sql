@@ -356,7 +356,7 @@ DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230306141846_Init') THEN
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-    VALUES ('20230306141846_Init', '7.0.3');
+    VALUES ('20230306141846_Init', '7.0.5');
     END IF;
 END $EF$;
 COMMIT;
@@ -382,7 +382,26 @@ DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230311141556_AddedIsSharedProp') THEN
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-    VALUES ('20230311141556_AddedIsSharedProp', '7.0.3');
+    VALUES ('20230311141556_AddedIsSharedProp', '7.0.5');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230509112811_RenameTokenToTokenHash') THEN
+    ALTER TABLE "RefreshToken" RENAME COLUMN "Token" TO "TokenHash";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20230509112811_RenameTokenToTokenHash') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20230509112811_RenameTokenToTokenHash', '7.0.5');
     END IF;
 END $EF$;
 COMMIT;
