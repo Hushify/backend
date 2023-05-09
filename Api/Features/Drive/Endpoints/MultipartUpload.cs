@@ -17,7 +17,8 @@ public static class MultipartUpload
 {
     public static IEndpointRouteBuilder MapMultipartUploadEndpoints(this RouteGroupBuilder routes)
     {
-        routes.WithParameterValidation(typeof(CreateMultipartUploadRequest), typeof(CommitMultipartUploadRequest));
+        routes.WithParameterValidation(typeof(CreateMultipartUploadRequest),
+            typeof(CommitMultipartUploadRequest));
 
         routes.MapPost("/create-multipart-upload", CreateMultipartUploadHandler);
         routes.MapPost("/commit-multipart-upload/{id:guid}", CommitMultipartUploadHandler);
@@ -27,10 +28,12 @@ public static class MultipartUpload
 
     private static async Task<Results<Ok<CreateMultipartUploadResponse>, ValidationProblem>>
         CreateMultipartUploadHandler(
-            CreateMultipartUploadRequest req, WorkspaceDbContext workspaceDbContext, IDriveService driveService,
+            CreateMultipartUploadRequest req, WorkspaceDbContext workspaceDbContext,
+            IDriveService driveService,
             CancellationToken ct)
     {
-        var response = await driveService.PrepareForMultipartUploadAsync(req.ParentFolderId, req.PreviousVersionId,
+        var response = await driveService.PrepareForMultipartUploadAsync(req.ParentFolderId,
+            req.PreviousVersionId,
             req.NumberOfChunks,
             req.EncryptedSize,
             req.KeyBundle, req.MetadataBundle, ct);
@@ -43,7 +46,8 @@ public static class MultipartUpload
             Guid id, CommitMultipartUploadRequest req, WorkspaceDbContext ctx, IAmazonS3 s3,
             CancellationToken ct)
     {
-        var file = await ctx.Files.Include(f => f.PreviousVersion).FirstOrDefaultAsync(f => f.Id == id, ct);
+        var file = await ctx.Files.Include(f => f.PreviousVersion)
+            .FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null)
         {
             throw new AppException("File doesn't exists.");
@@ -74,7 +78,8 @@ public static class MultipartUpload
             Guid id, WorkspaceDbContext ctx, IAmazonS3 s3,
             CancellationToken ct)
     {
-        var file = await ctx.Files.Include(f => f.PreviousVersion).FirstOrDefaultAsync(f => f.Id == id, ct);
+        var file = await ctx.Files.Include(f => f.PreviousVersion)
+            .FirstOrDefaultAsync(f => f.Id == id, ct);
         if (file is null)
         {
             throw new AppException("File doesn't exists.");
@@ -88,10 +93,12 @@ public static class MultipartUpload
     }
 }
 
-public sealed record CreateMultipartUploadRequest(Guid ParentFolderId, Guid? PreviousVersionId, int NumberOfChunks,
-    int EncryptedSize, MetadataBundle MetadataBundle, SecretKeyBundle KeyBundle);
+public sealed record CreateMultipartUploadRequest(Guid ParentFolderId, Guid? PreviousVersionId,
+    int NumberOfChunks,
+    long EncryptedSize, MetadataBundle MetadataBundle, SecretKeyBundle KeyBundle);
 
-public sealed class CreateMultipartUploadRequestValidator : AbstractValidator<CreateMultipartUploadRequest>
+public sealed class
+    CreateMultipartUploadRequestValidator : AbstractValidator<CreateMultipartUploadRequest>
 {
     public CreateMultipartUploadRequestValidator()
     {
@@ -105,13 +112,15 @@ public sealed class CreateMultipartUploadRequestValidator : AbstractValidator<Cr
 
 public sealed record Part(int PartNumber, string PreSignedUrl);
 
-public sealed record CreateMultipartUploadResponse(Guid FileId, string UploadId, IEnumerable<Part> Parts);
+public sealed record CreateMultipartUploadResponse(Guid FileId, string UploadId,
+    IEnumerable<Part> Parts);
 
 public sealed record CommitPart(int PartNumber, string ETag);
 
 public sealed record CommitMultipartUploadRequest(IEnumerable<CommitPart> Parts);
 
-public sealed class CommitMultipartUploadRequestValidator : AbstractValidator<CommitMultipartUploadRequest>
+public sealed class
+    CommitMultipartUploadRequestValidator : AbstractValidator<CommitMultipartUploadRequest>
 {
     public CommitMultipartUploadRequestValidator()
     {
