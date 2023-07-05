@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build-env
 WORKDIR /app
 EXPOSE 80
 
@@ -10,7 +10,7 @@ RUN dotnet restore
 RUN dotnet publish -c Release -o out
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:7.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine
 
 ENV DOTNET_EnableDiagnostics=0
 
